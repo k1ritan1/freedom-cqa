@@ -1,16 +1,66 @@
-/* Freedom Broker CQA - High-Density Enterprise Financial CRM Design System */
+/* Freedom Broker CQA - Conversation Quality Analytics Design System
+ * Supports full Dark (default) and Light themes with WCAG AA compliance.
+ */
+
 :root {
-  --fb-pine: #0c3b2e;
-  --fb-pine-dark: #07241c;
-  --fb-green: #00965e;
-  --fb-green-hover: #007f50;
-  --fb-green-subtle: #f0fdf4;
-  --fb-slate: #0f172a;
-  --fb-slate-muted: #64748b;
+  /* Light Theme tokens */
+  --fb-bg: #f8fafc;
+  --fb-surface: #ffffff;
+  --fb-surface-subtle: #f1f5f9;
+  --fb-surface-hover: #f8fafc;
+  --fb-card-bg: #ffffff;
+  --fb-header-bg: #0c3b2e;
+  --fb-header-border: #07241c;
+  --fb-header-text: #ffffff;
+  --fb-sidebar-bg: #ffffff;
   --fb-border: #cbd5e1;
   --fb-border-light: #e2e8f0;
-  --fb-surface: #ffffff;
-  --fb-bg: #f8fafc;
+  --fb-text-primary: #0f172a;
+  --fb-text-secondary: #475569;
+  --fb-text-muted: #64748b;
+  --fb-accent-green: #00965e;
+  --fb-accent-green-hover: #007f50;
+  --fb-accent-green-subtle: #f0fdf4;
+  --fb-quote-bg: #f8fafc;
+  --fb-quote-border: #cbd5e1;
+  --fb-input-bg: #ffffff;
+  --fb-input-border: #cbd5e1;
+  --fb-modal-bg: #ffffff;
+  --fb-tag-bg: #f1f5f9;
+  --fb-tag-text: #334155;
+  --fb-footer-bg: #0c3b2e;
+  --fb-footer-text: #cbd5e1;
+}
+
+[data-theme="dark"],
+.dark {
+  /* Dark Theme tokens matching Freedom Terminal design */
+  --fb-bg: #121415;
+  --fb-surface: #1d2022;
+  --fb-surface-subtle: #24282b;
+  --fb-surface-hover: #272c30;
+  --fb-card-bg: #1d2022;
+  --fb-header-bg: #181b1d;
+  --fb-header-border: #2a2e32;
+  --fb-header-text: #f1f3f4;
+  --fb-sidebar-bg: #181b1d;
+  --fb-border: rgba(120, 135, 143, 0.22);
+  --fb-border-light: rgba(120, 135, 143, 0.14);
+  --fb-text-primary: #f1f3f4;
+  --fb-text-secondary: #9daab5;
+  --fb-text-muted: #74828f;
+  --fb-accent-green: #00bc58;
+  --fb-accent-green-hover: #00a84e;
+  --fb-accent-green-subtle: rgba(0, 188, 88, 0.12);
+  --fb-quote-bg: #222629;
+  --fb-quote-border: rgba(120, 135, 143, 0.3);
+  --fb-input-bg: #222629;
+  --fb-input-border: #33393f;
+  --fb-modal-bg: #1d2022;
+  --fb-tag-bg: #262b2e;
+  --fb-tag-text: #e2e8f0;
+  --fb-footer-bg: #181b1d;
+  --fb-footer-text: #8b98a5;
 }
 
 * {
@@ -20,42 +70,90 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--fb-bg);
-  color: var(--fb-slate);
+  color: var(--fb-text-primary);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Crisp compact scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--fb-surface-subtle);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 2px;
+  background: var(--fb-border);
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--fb-text-muted);
 }
 
 /* Keyboard accessibility */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-  outline: 2px solid var(--fb-green);
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--fb-accent-green);
   outline-offset: 1px;
+}
+
+/* Themed surfaces */
+.theme-surface {
+  background-color: var(--fb-surface);
+  border-color: var(--fb-border);
+  color: var(--fb-text-primary);
+}
+
+.theme-surface-subtle {
+  background-color: var(--fb-surface-subtle);
+  border-color: var(--fb-border-light);
+  color: var(--fb-text-primary);
+}
+
+.theme-sidebar {
+  background-color: var(--fb-sidebar-bg);
+  border-color: var(--fb-border);
+}
+
+.theme-input {
+  background-color: var(--fb-input-bg) !important;
+  border-color: var(--fb-input-border) !important;
+  color: var(--fb-text-primary) !important;
+}
+
+.theme-input:focus {
+  border-color: var(--fb-accent-green) !important;
+  outline: none;
+}
+
+.theme-modal {
+  background-color: var(--fb-modal-bg);
+  border-color: var(--fb-border);
+  color: var(--fb-text-primary);
+}
+
+.theme-header {
+  background-color: var(--fb-header-bg);
+  border-color: var(--fb-header-border);
+  color: var(--fb-header-text);
+}
+
+.theme-footer {
+  background-color: var(--fb-footer-bg);
+  border-color: var(--fb-header-border);
+  color: var(--fb-footer-text);
 }
 
 /* Quote highlight marker with smooth pulse decay */
 @keyframes quoteHighlight {
-  0% { background-color: #fef08a; }
-  60% { background-color: #fef9c3; }
+  0% { background-color: rgba(234, 179, 8, 0.45); }
+  50% { background-color: rgba(234, 179, 8, 0.25); }
   100% { background-color: transparent; }
 }
 
 .highlight-pulse {
   animation: quoteHighlight 2.5s ease-out forwards;
-  border-left: 3px solid #ca8a04 !important;
+  border-left: 3px solid #eab308 !important;
 }
 
 /* Dynamics 365 indicator tag */
@@ -96,5 +194,38 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* Modal backdrop */
 .modal-backdrop {
-  background-color: rgba(15, 23, 42, 0.65);
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(2px);
+}
+
+/* Interactive elements */
+button, select, input, [role="button"] {
+  cursor: pointer;
+}
+
+/* Custom criteria card hover effect */
+.criterion-card {
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.criterion-card:hover {
+  background-color: var(--fb-surface-hover);
+}
+
+/* Quote box styling */
+.quote-box {
+  background-color: var(--fb-quote-bg);
+  border: 1px solid var(--fb-quote-border);
+  border-left: 3px solid var(--fb-accent-green);
+  transition: all 0.15s ease;
+}
+.quote-box:hover {
+  background-color: var(--fb-accent-green-subtle);
+  border-left-color: var(--fb-accent-green-hover);
+}
+
+.quote-box-violation {
+  border-left-color: #ef4444 !important;
+}
+.quote-box-violation:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
 }

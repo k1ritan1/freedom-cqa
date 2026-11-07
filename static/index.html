@@ -1,72 +1,94 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Freedom Broker · Conversation Quality Analytics (CQA)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    colors: {
+                        fbgreen: '#00bc58',
+                        fbgreenhover: '#00a84e',
+                        fbdark: '#121415',
+                        fbsurface: '#1d2022',
+                        fbsubtle: '#24282b'
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden text-xs">
+<body class="theme-surface h-screen flex flex-col overflow-hidden text-xs transition-colors duration-200">
 
-    <!-- Top Unified Compact Navigation Bar (Height: 50px) -->
-    <header class="h-[50px] bg-[#0c3b2e] text-white px-4 flex items-center justify-between border-b border-[#07241c] z-20 shrink-0">
+    <!-- Top Unified Navigation Bar -->
+    <header class="h-[52px] theme-header px-4 flex items-center justify-between border-b z-20 shrink-0">
         <!-- Brand & Active Context -->
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded bg-[#00965e] flex items-center justify-center font-bold text-sm tracking-tighter text-white shadow-xs">
+            <div class="w-8 h-8 rounded-lg bg-[#00bc58] text-white flex items-center justify-center font-bold text-sm tracking-tighter shadow-sm">
                 FB
             </div>
             <div class="flex items-center gap-2">
-                <span class="font-bold text-sm tracking-tight text-white">Freedom CQA</span>
-                <span class="text-[11px] text-emerald-300 font-medium hidden sm:inline">| Контроль качества диалогов</span>
-                <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold d365-tag hidden md:inline-flex items-center gap-1">
+                <span class="font-bold text-sm tracking-tight text-[var(--fb-text-primary)]">Freedom CQA</span>
+                <span class="text-[11px] text-[var(--fb-accent-green)] font-medium hidden sm:inline">| Контроль качества диалогов</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold d365-tag hidden md:inline-flex items-center gap-1">
                     <i class="fa-solid fa-cube text-[9px]"></i> D365 Ready
                 </span>
             </div>
         </div>
 
         <!-- Center: Current Dialogue Quick Info -->
-        <div id="headerDialogueContext" class="hidden md:flex items-center gap-2 bg-[#08281f] px-3 py-1 rounded border border-[#164e3f] text-xs">
-            <span class="text-slate-400">Диалог:</span>
-            <span id="navActiveConvId" class="font-bold font-mono text-emerald-300">p1-ru-001</span>
-            <span id="navActiveChannel" class="text-slate-400 text-[11px]">• Чат</span>
-            <span id="navActiveLang" class="px-1 py-0.2 rounded bg-[#0c3b2e] text-slate-300 font-bold text-[10px]">RU</span>
-            <div id="navActiveAudioBadge" class="hidden ml-1 flex items-center gap-1 text-purple-300 font-medium text-[11px]">
+        <div id="headerDialogueContext" class="hidden md:flex items-center gap-2.5 theme-surface-subtle px-3 py-1.5 rounded-lg border border-[var(--fb-border)] text-xs">
+            <span class="text-[var(--fb-text-muted)]">Диалог:</span>
+            <span id="navActiveConvId" class="font-bold font-mono text-[var(--fb-accent-green)]">p1-ru-001</span>
+            <span id="navActiveChannel" class="text-[var(--fb-text-secondary)] text-[11px]">• Чат</span>
+            <span id="navActiveLang" class="px-1.5 py-0.5 rounded bg-[var(--fb-tag-bg)] text-[var(--fb-tag-text)] font-bold text-[10px]">RU</span>
+            <div id="navActiveAudioBadge" class="hidden ml-1 flex items-center gap-1 text-purple-400 font-medium text-[11px]">
                 <i class="fa-solid fa-phone text-[10px]"></i> Звонок
             </div>
         </div>
 
-        <!-- Right Controls: Clean Enterprise Bar -->
+        <!-- Right Controls: Action Bar -->
         <div class="flex items-center gap-2">
+            <!-- Theme Toggle Button -->
+            <button id="btnThemeToggle" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-primary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs" title="Сменить тему оформления">
+                <i id="themeIcon" class="fa-solid fa-sun text-amber-400"></i>
+                <span id="themeLabel" class="hidden sm:inline font-medium">Светлая</span>
+            </button>
+
             <!-- Supervisor Cabinet Button -->
-            <button id="btnSupervisorPending" class="px-2.5 py-1.5 bg-[#08281f] hover:bg-[#062018] text-amber-300 border border-[#164e3f] text-xs font-medium rounded transition flex items-center gap-1.5">
+            <button id="btnSupervisorPending" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-amber-400 border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
                 <i class="fa-solid fa-user-check text-amber-400"></i>
                 <span class="hidden sm:inline">Супервизор</span>
                 <span id="pendingAppealsBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-600 text-white font-bold text-[10px]">0</span>
             </button>
 
             <!-- Checklist Settings -->
-            <button id="btnChecklistConfig" class="px-2.5 py-1.5 bg-[#08281f] hover:bg-[#062018] text-slate-300 border border-[#164e3f] text-xs font-medium rounded transition flex items-center gap-1">
-                <i class="fa-solid fa-sliders text-slate-400"></i>
+            <button id="btnChecklistConfig" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-secondary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
+                <i class="fa-solid fa-sliders text-[var(--fb-text-muted)]"></i>
                 <span class="hidden sm:inline">Чек-лист</span>
             </button>
 
             <!-- CRM Sync -->
-            <button id="btnSyncModal" class="px-2.5 py-1.5 bg-[#08281f] hover:bg-[#062018] text-slate-300 border border-[#164e3f] text-xs font-medium rounded transition flex items-center gap-1" title="Импорт из CRM">
-                <i class="fa-solid fa-cloud-arrow-down text-slate-400"></i>
+            <button id="btnSyncModal" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-secondary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs" title="Импорт из CRM">
+                <i class="fa-solid fa-cloud-arrow-down text-[var(--fb-text-muted)]"></i>
                 <span class="hidden sm:inline">Импорт</span>
             </button>
 
             <!-- Batch Evaluate -->
-            <button id="btnBatchEvaluate" class="px-2.5 py-1.5 bg-[#08281f] hover:bg-[#062018] text-emerald-300 border border-[#164e3f] text-xs font-medium rounded transition flex items-center gap-1">
-                <i class="fa-solid fa-play text-emerald-400"></i>
+            <button id="btnBatchEvaluate" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-accent-green)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
+                <i class="fa-solid fa-play text-[var(--fb-accent-green)]"></i>
                 <span class="hidden sm:inline">Оценить все</span>
             </button>
 
             <!-- Evaluate Single Active Dialogue -->
-            <button id="btnEvaluateSingle" class="px-3 py-1.5 bg-[#00965e] hover:bg-[#007f50] text-white text-xs font-semibold rounded transition flex items-center gap-1.5 shadow-xs">
+            <button id="btnEvaluateSingle" class="px-3 py-1.5 bg-[#00bc58] hover:bg-[#00a84e] text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm">
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                 <span>Оценить (AI)</span>
             </button>
@@ -74,14 +96,14 @@
     </header>
 
     <!-- Batch Progress Mini Banner (Visible only when batch running) -->
-    <div id="batchProgressBar" class="hidden bg-emerald-50 border-b border-emerald-200 px-4 py-1.5 text-xs flex items-center justify-between text-emerald-900 shrink-0">
+    <div id="batchProgressBar" class="hidden bg-emerald-950/70 border-b border-emerald-700/60 px-4 py-1.5 text-xs flex items-center justify-between text-emerald-200 shrink-0">
         <div class="flex items-center gap-2">
-            <i class="fa-solid fa-spinner fa-spin text-emerald-600"></i>
+            <i class="fa-solid fa-spinner fa-spin text-emerald-400"></i>
             <span>Пакетная оценка DEV набора: <strong id="batchProgressText">0 / 0</strong></span>
-            <span class="text-slate-500 font-mono text-[11px]" id="batchCurrentId"></span>
+            <span class="text-slate-400 font-mono text-[11px]" id="batchCurrentId"></span>
         </div>
-        <div class="w-48 bg-emerald-200 rounded-full h-1.5 overflow-hidden">
-            <div id="batchProgressFill" class="bg-[#00965e] h-1.5 transition-all duration-300" style="width: 0%"></div>
+        <div class="w-48 bg-emerald-900 rounded-full h-1.5 overflow-hidden">
+            <div id="batchProgressFill" class="bg-[#00bc58] h-1.5 transition-all duration-300" style="width: 0%"></div>
         </div>
     </div>
 
@@ -89,28 +111,27 @@
     <div class="flex-1 flex overflow-hidden">
 
         <!-- Left Column: Compact High-Density Dialogue Explorer (Width: 340px) -->
-        <aside class="w-80 md:w-[340px] bg-white border-r border-[#cbd5e1] flex flex-col shrink-0">
+        <aside class="w-80 md:w-[340px] theme-sidebar border-r border-[var(--fb-border)] flex flex-col shrink-0">
             <!-- Search & Filters -->
-            <div class="p-2 border-b border-[#cbd5e1] space-y-1.5 bg-slate-50/70">
+            <div class="p-2.5 border-b border-[var(--fb-border)] space-y-2 theme-surface-subtle">
                 <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-slate-400 text-xs"></i>
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-[var(--fb-text-muted)] text-xs"></i>
                     <input type="text" id="searchInput" placeholder="Поиск по ID или теме диалога..." 
-                        class="w-full pl-7 pr-2.5 py-1 text-xs bg-white border border-[#cbd5e1] rounded focus:border-[#00965e] transition">
+                        class="w-full pl-8 pr-3 py-1.5 text-xs theme-input rounded-lg border border-[var(--fb-border)] transition">
                 </div>
-                
-                <div class="grid grid-cols-3 gap-1">
-                    <select id="filterLanguage" class="text-[11px] py-1 px-1.5 bg-white border border-[#cbd5e1] rounded">
+                <div class="grid grid-cols-3 gap-1.5">
+                    <select id="filterLanguage" class="text-[11px] py-1 px-2 theme-input rounded-lg border border-[var(--fb-border)]">
                         <option value="">Язык: Все</option>
                         <option value="RU">RU</option>
                         <option value="KZ">KZ</option>
                         <option value="EN">EN</option>
                     </select>
-                    <select id="filterChannel" class="text-[11px] py-1 px-1.5 bg-white border border-[#cbd5e1] rounded">
+                    <select id="filterChannel" class="text-[11px] py-1 px-2 theme-input rounded-lg border border-[var(--fb-border)]">
                         <option value="">Канал: Все</option>
                         <option value="agent chat">Чат</option>
                         <option value="voice call">Звонок</option>
                     </select>
-                    <select id="filterStatus" class="text-[11px] py-1 px-1.5 bg-white border border-[#cbd5e1] rounded">
+                    <select id="filterStatus" class="text-[11px] py-1 px-2 theme-input rounded-lg border border-[var(--fb-border)]">
                         <option value="">Статус: Все</option>
                         <option value="evaluated">Оценен</option>
                         <option value="pending">Ожидает</option>
@@ -121,43 +142,43 @@
             </div>
 
             <!-- Dialogue Scrollable List -->
-            <div id="dialogueListContainer" class="flex-1 overflow-y-auto divide-y divide-slate-100">
-                <div class="p-8 text-center text-slate-400 text-xs">
-                    <i class="fa-solid fa-circle-notch fa-spin text-base mb-2 text-[#00965e]"></i>
+            <div id="dialogueListContainer" class="flex-1 overflow-y-auto divide-y divide-[var(--fb-border-light)]">
+                <div class="p-8 text-center text-[var(--fb-text-muted)] text-xs">
+                    <i class="fa-solid fa-circle-notch fa-spin text-base mb-2 text-[#00bc58]"></i>
                     <p>Загрузка диалогов...</p>
                 </div>
             </div>
         </aside>
 
         <!-- Right Main Inspector Column -->
-        <main class="flex-1 flex flex-col bg-slate-50 overflow-hidden">
+        <main class="flex-1 flex flex-col theme-surface overflow-hidden">
             
             <!-- Compact Inspector Header Bar -->
-            <div class="bg-white border-b border-[#cbd5e1] px-5 py-2.5 flex items-center justify-between shadow-2xs shrink-0">
+            <div class="theme-surface border-b border-[var(--fb-border)] px-5 py-2.5 flex items-center justify-between shadow-2xs shrink-0">
                 <div class="flex items-center gap-3 min-w-0">
-                    <div id="activeChannelIcon" class="w-8 h-8 rounded bg-emerald-50 text-[#00965e] flex items-center justify-center text-xs shrink-0 border border-emerald-200">
+                    <div id="activeChannelIcon" class="w-8 h-8 rounded-lg bg-[var(--fb-accent-green-subtle)] text-[var(--fb-accent-green)] flex items-center justify-center text-xs shrink-0 border border-[var(--fb-border)]">
                         <i class="fa-regular fa-comments"></i>
                     </div>
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                            <h2 id="activeConversationId" class="text-sm font-bold text-slate-900 tracking-tight font-mono">p1-ru-001</h2>
-                            <span id="activeLangBadge" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">RU</span>
-                            <span id="activeChannelBadge" class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">Чат</span>
-                            <span id="severeAlertBadge" class="hidden px-2 py-0.2 rounded text-[10px] font-bold bg-rose-600 text-white flex items-center gap-1">
+                            <h2 id="activeConversationId" class="text-sm font-bold text-[var(--fb-text-primary)] tracking-tight font-mono">p1-ru-001</h2>
+                            <span id="activeLangBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--fb-tag-bg)] text-[var(--fb-tag-text)] border border-[var(--fb-border)]">RU</span>
+                            <span id="activeChannelBadge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--fb-tag-bg)] text-[var(--fb-text-secondary)] border border-[var(--fb-border)]">Чат</span>
+                            <span id="severeAlertBadge" class="hidden px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white flex items-center gap-1 shadow-xs">
                                 <i class="fa-solid fa-triangle-exclamation"></i> ГРУБОЕ НАРУШЕНИЕ
                             </span>
                             <!-- Voice Call audio button if call -->
                             <div id="voiceCallControl" class="hidden inline-flex items-center gap-1">
                                 <a id="btnExternalAudio" href="#" target="_blank" rel="noopener noreferrer" 
-                                    class="px-2 py-0.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded text-[11px] font-medium flex items-center gap-1 transition">
+                                    class="px-2 py-0.5 bg-purple-900/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/50 rounded-lg text-[11px] font-medium flex items-center gap-1 transition">
                                     <i class="fa-solid fa-play text-[9px]"></i>
                                     <span>Запись Power Automate</span>
                                 </a>
                             </div>
                         </div>
-                        <div class="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                        <div class="text-[11px] text-[var(--fb-text-muted)] flex items-center gap-2 mt-0.5">
                             <span id="activeMsgCount">Сообщений: 0</span>
-                            <span id="activeEvalMeta" class="hidden text-slate-400"></span>
+                            <span id="activeEvalMeta" class="hidden text-[var(--fb-text-muted)]"></span>
                         </div>
                     </div>
                 </div>
@@ -165,32 +186,32 @@
                 <!-- Right: Overall Chess Rating Badge & Tab Switcher -->
                 <div class="flex items-center gap-4 shrink-0">
                     <!-- Overall Score Chess Review Pill -->
-                    <div id="scoreHeaderPill" class="flex items-center gap-2.5 bg-slate-50 border border-[#cbd5e1] px-3 py-1 rounded-md">
+                    <div id="scoreHeaderPill" class="flex items-center gap-2.5 theme-surface-subtle border border-[var(--fb-border)] px-3 py-1.5 rounded-lg shadow-2xs">
                         <img id="headerChessIcon" src="/assets/rating icons/brilliant.png" alt="Chess Badge" class="chess-icon-md">
                         <div>
                             <div class="flex items-center gap-1.5 leading-none">
-                                <span id="headerChessLabel" class="text-[11px] font-bold text-slate-700">Блестящий диалог</span>
+                                <span id="headerChessLabel" class="text-[11px] font-bold text-[var(--fb-text-primary)]">Блестящий диалог</span>
                             </div>
-                            <div class="text-sm font-black text-slate-900 font-mono leading-tight mt-0.5">
-                                <span id="activeTotalScore">100.00</span> <span class="text-[10px] font-normal text-slate-400">/ 100</span>
+                            <div class="text-sm font-black text-[var(--fb-text-primary)] font-mono leading-tight mt-0.5">
+                                <span id="activeTotalScore">100.00</span> <span class="text-[10px] font-normal text-[var(--fb-text-muted)]">/ 100</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Clean Inline Tabstrip -->
-                    <div class="flex bg-slate-100 p-0.5 rounded border border-[#cbd5e1] text-xs">
+                    <div class="flex theme-surface-subtle p-0.5 rounded-lg border border-[var(--fb-border)] text-xs">
                         <button onclick="window.switchTab('score')" id="tabBtnScore" 
-                            class="px-3 py-1 font-semibold rounded bg-white text-slate-900 shadow-2xs transition">
+                            class="px-3 py-1 font-semibold rounded-md bg-[var(--fb-surface)] text-[var(--fb-text-primary)] shadow-2xs transition">
                             Критерии CQA
                         </button>
                         <button onclick="window.switchTab('transcript')" id="tabBtnTranscript" 
-                            class="px-3 py-1 font-medium rounded text-slate-600 hover:text-slate-900 transition">
+                            class="px-3 py-1 font-medium rounded-md text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] transition">
                             Транскрипт
                         </button>
                         <button onclick="window.switchTab('appeals')" id="tabBtnAppeals" 
-                            class="px-3 py-1 font-medium rounded text-slate-600 hover:text-slate-900 transition flex items-center gap-1">
+                            class="px-3 py-1 font-medium rounded-md text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] transition flex items-center gap-1">
                             <span>Апелляции</span>
-                            <span id="tabAppealsBadge" class="hidden px-1 py-0.2 rounded-full bg-amber-600 text-white text-[9px] font-bold">0</span>
+                            <span id="tabAppealsBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[9px] font-bold">0</span>
                         </button>
                     </div>
                 </div>
@@ -200,11 +221,11 @@
             <div id="tabContentScore" class="flex-1 overflow-y-auto p-4 space-y-4">
                 
                 <!-- Notice when no evaluation yet -->
-                <div id="noEvaluationNotice" class="hidden p-8 text-center bg-white rounded-lg border border-[#cbd5e1]">
-                    <i class="fa-solid fa-clipboard-question text-3xl text-slate-300 mb-2"></i>
-                    <h3 class="text-xs font-bold text-slate-700 mb-1">Диалог еще не оценен</h3>
-                    <p class="text-[11px] text-slate-500 mb-3 max-w-sm mx-auto">
-                        Нажмите кнопку «Оценить (Groq)» в шапке, чтобы получить детализированную оценку качества.
+                <div id="noEvaluationNotice" class="hidden p-8 text-center theme-surface rounded-xl border border-[var(--fb-border)]">
+                    <i class="fa-solid fa-clipboard-question text-3xl text-[var(--fb-text-muted)] mb-2"></i>
+                    <h3 class="text-xs font-bold text-[var(--fb-text-primary)] mb-1">Диалог еще не оценен</h3>
+                    <p class="text-[11px] text-[var(--fb-text-muted)] mb-3 max-w-sm mx-auto">
+                        Нажмите кнопку «Оценить (AI)» в шапке, чтобы получить детализированную оценку качества.
                     </p>
                 </div>
 
@@ -212,28 +233,28 @@
                 <div id="evaluationCard" class="space-y-3">
                     
                     <!-- Section Breakdown Bar (Compact) -->
-                    <div id="sectionScoresContainer" class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div id="sectionScoresContainer" class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                         <!-- Dynamically filled with section pills -->
                     </div>
 
                     <!-- Monolithic Criteria Cards Container -->
-                    <div class="bg-white rounded-lg border border-[#cbd5e1] overflow-hidden shadow-2xs divide-y divide-[#cbd5e1]">
-                        <div class="px-4 py-2 bg-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-700 uppercase tracking-tight">
+                    <div class="theme-surface rounded-xl border border-[var(--fb-border)] overflow-hidden shadow-2xs divide-y divide-[var(--fb-border)]">
+                        <div class="px-4 py-2.5 theme-surface-subtle flex items-center justify-between text-[11px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">
                             <span>Детализация по 8 критериям чек-листа Freedom Broker</span>
-                            <span class="text-slate-500 font-normal lowercase">нажмите на цитату для перехода к фразе</span>
+                            <span class="text-[var(--fb-text-muted)] font-normal lowercase">нажмите на цитату для перехода к фразе</span>
                         </div>
-                        <div id="criteriaMonolithicContainer" class="divide-y divide-slate-100">
+                        <div id="criteriaMonolithicContainer" class="divide-y divide-[var(--fb-border-light)]">
                             <!-- Filled dynamically with monolithic rows -->
                         </div>
                     </div>
 
                     <!-- AI Auditor Feedback Block -->
-                    <div class="bg-white rounded-lg border border-[#cbd5e1] p-3 shadow-2xs">
-                        <div class="flex items-center gap-1.5 mb-1 text-[11px] font-bold text-slate-700 uppercase tracking-tight">
-                            <i class="fa-solid fa-comment-medical text-[#00965e]"></i>
+                    <div class="theme-surface rounded-xl border border-[var(--fb-border)] p-3.5 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1.5 text-[11px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">
+                            <i class="fa-solid fa-comment-medical text-[#00bc58]"></i>
                             <span>Резюме аудитора качества</span>
                         </div>
-                        <p id="evalSummaryFeedback" class="text-[11px] text-slate-600 leading-relaxed italic bg-slate-50 p-2.5 rounded border border-slate-200">
+                        <p id="evalSummaryFeedback" class="text-[11px] text-[var(--fb-text-secondary)] leading-relaxed italic theme-surface-subtle p-3 rounded-lg border border-[var(--fb-border-light)]">
                             Оценка выполнена успешно.
                         </p>
                     </div>
@@ -243,17 +264,17 @@
 
             <!-- Tab Content 2: Transcript Viewer -->
             <div id="tabContentTranscript" class="hidden flex-1 overflow-y-auto p-4">
-                <div class="max-w-3xl mx-auto space-y-2" id="transcriptMessagesList">
+                <div class="max-w-3xl mx-auto space-y-2.5" id="transcriptMessagesList">
                     <!-- Dynamically filled with chat bubbles -->
                 </div>
             </div>
 
             <!-- Tab Content 3: Appeals & Audit Log -->
             <div id="tabContentAppeals" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
-                <div class="bg-white rounded-lg border border-[#cbd5e1] p-4 shadow-2xs">
-                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-tight">Апелляции по текущему диалогу</h3>
-                        <button onclick="window.openAppealModal(null)" class="px-2.5 py-1 bg-[#00965e] hover:bg-[#007f50] text-white text-xs font-medium rounded transition flex items-center gap-1">
+                <div class="theme-surface rounded-xl border border-[var(--fb-border)] p-4 shadow-2xs">
+                    <div class="flex items-center justify-between mb-3 border-b border-[var(--fb-border-light)] pb-2">
+                        <h3 class="text-xs font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">Апелляции по текущему диалогу</h3>
+                        <button onclick="window.openAppealModal(null)" class="px-2.5 py-1 bg-[#00bc58] hover:bg-[#00a84e] text-white text-xs font-medium rounded-lg transition flex items-center gap-1">
                             <i class="fa-solid fa-plus"></i>
                             <span>Подать апелляцию</span>
                         </button>
@@ -268,71 +289,71 @@
         </main>
     </div>
 
-    <!-- Bottom Status Bar (Height: 26px) -->
-    <footer class="h-[26px] bg-[#0c3b2e] text-slate-300 px-4 flex items-center justify-between text-[11px] border-t border-[#07241c] shrink-0 font-mono">
+    <!-- Bottom Status Bar -->
+    <footer class="h-[28px] theme-footer px-4 flex items-center justify-between text-[11px] border-t shrink-0 font-mono">
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span class="text-white font-semibold">AI: Groq (openai/gpt-oss-120b)</span>
+                <span class="w-2 h-2 rounded-full bg-[#00bc58]"></span>
+                <span class="text-[var(--fb-text-primary)] font-semibold">AI: Groq (openai/gpt-oss-120b)</span>
             </div>
-            <span class="text-[#164e3f]">|</span>
-            <div>Расход: <span id="totalCostHeader" class="text-white font-semibold">$0.0000</span></div>
-            <span class="text-[#164e3f]">|</span>
-            <div>Задержка: <span id="avgLatencyHeader" class="text-white font-semibold">0 мс</span></div>
-            <span class="text-[#164e3f]">|</span>
-            <div>Средний балл: <span id="statAvgScore" class="text-emerald-400 font-semibold">0.0</span></div>
+            <span class="text-[var(--fb-text-muted)]">|</span>
+            <div>Расход: <span id="totalCostHeader" class="text-[var(--fb-text-primary)] font-semibold">$0.0000</span></div>
+            <span class="text-[var(--fb-text-muted)]">|</span>
+            <div>Задержка: <span id="avgLatencyHeader" class="text-[var(--fb-text-primary)] font-semibold">0 мс</span></div>
+            <span class="text-[var(--fb-text-muted)]">|</span>
+            <div>Средний балл: <span id="statAvgScore" class="text-[var(--fb-accent-green)] font-semibold">0.0</span></div>
         </div>
 
         <div class="flex items-center gap-3">
-            <div>Диалогов: <span id="statTotal" class="text-white font-semibold">65</span></div>
-            <span class="text-[#164e3f]">|</span>
-            <div>Оценено: <span id="statEvaluated" class="text-emerald-400 font-semibold">0</span></div>
-            <span class="text-[#164e3f]">|</span>
+            <div>Диалогов: <span id="statTotal" class="text-[var(--fb-text-primary)] font-semibold">65</span></div>
+            <span class="text-[var(--fb-text-muted)]">|</span>
+            <div>Оценено: <span id="statEvaluated" class="text-[var(--fb-accent-green)] font-semibold">0</span></div>
+            <span class="text-[var(--fb-text-muted)]">|</span>
             <div>Нарушений: <span id="statViolations" class="text-rose-400 font-semibold">0</span></div>
-            <span class="text-[#164e3f]">|</span>
-            <div class="text-emerald-300">Dynamics 365 Adapter: Ready</div>
+            <span class="text-[var(--fb-text-muted)]">|</span>
+            <div class="text-[var(--fb-accent-green)] font-semibold">Dynamics 365 Adapter: Ready</div>
         </div>
     </footer>
 
     <!-- Modal: Appeal Creation -->
     <div id="modalAppeal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
-        <div class="bg-white rounded-lg max-w-md w-full p-5 shadow-xl border border-[#cbd5e1] space-y-3">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <div class="theme-modal rounded-xl max-w-md w-full p-5 shadow-2xl border border-[var(--fb-border)] space-y-3.5">
+            <div class="flex items-center justify-between border-b border-[var(--fb-border-light)] pb-2.5">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-scale-balanced text-amber-600"></i>
-                    <h3 class="text-xs font-bold text-slate-900">Подача апелляции на оценку</h3>
+                    <i class="fa-solid fa-scale-balanced text-amber-500"></i>
+                    <h3 class="text-xs font-bold text-[var(--fb-text-primary)]">Подача апелляции на оценку</h3>
                 </div>
-                <button onclick="window.closeModal('modalAppeal')" class="text-slate-400 hover:text-slate-600">
+                <button onclick="window.closeModal('modalAppeal')" class="text-[var(--fb-text-muted)] hover:text-[var(--fb-text-primary)]">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
             <form id="appealForm" onsubmit="window.handleAppealSubmit(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Критерий для пересмотра:</label>
-                    <select id="appealCriterionSelect" required class="w-full py-1.5 px-2 bg-white border border-[#cbd5e1] rounded">
+                    <label class="block font-semibold text-[var(--fb-text-secondary)] mb-1">Критерий для пересмотра:</label>
+                    <select id="appealCriterionSelect" required class="w-full py-1.5 px-2.5 theme-input rounded-lg border border-[var(--fb-border)]">
                         <!-- Filled dynamically -->
                     </select>
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Предлагаемый балл:</label>
+                    <label class="block font-semibold text-[var(--fb-text-secondary)] mb-1">Предлагаемый балл:</label>
                     <input type="number" step="0.5" min="0" max="20" id="appealProposedScore" required 
-                        class="w-full py-1.5 px-2 bg-white border border-[#cbd5e1] rounded font-mono" placeholder="20.0">
+                        class="w-full py-1.5 px-2.5 theme-input rounded-lg border border-[var(--fb-border)] font-mono" placeholder="20.0">
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Обоснование оператора (ссылка на реплику):</label>
+                    <label class="block font-semibold text-[var(--fb-text-secondary)] mb-1">Обоснование оператора (ссылка на реплику):</label>
                     <textarea id="appealOperatorComment" rows="3" required 
                         placeholder="Опишите, почему оценка должна быть скорректирована..."
-                        class="w-full py-1.5 px-2 bg-white border border-[#cbd5e1] rounded"></textarea>
+                        class="w-full py-1.5 px-2.5 theme-input rounded-lg border border-[var(--fb-border)]"></textarea>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" onclick="window.closeModal('modalAppeal')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs">
+                <div class="flex justify-end gap-2 pt-2 border-t border-[var(--fb-border-light)]">
+                    <button type="button" onclick="window.closeModal('modalAppeal')" class="px-3 py-1 theme-surface-subtle text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] rounded-lg text-xs">
                         Отмена
                     </button>
-                    <button type="submit" class="px-3.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded text-xs">
+                    <button type="submit" class="px-3.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-xs">
                         Отправить апелляцию
                     </button>
                 </div>
@@ -342,13 +363,13 @@
 
     <!-- Modal: Supervisor Cabinet (Pending Appeals) -->
     <div id="modalSupervisor" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
-        <div class="bg-white rounded-lg max-w-2xl w-full p-5 shadow-xl border border-[#cbd5e1] space-y-3 max-h-[85vh] flex flex-col">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <div class="theme-modal rounded-xl max-w-2xl w-full p-5 shadow-2xl border border-[var(--fb-border)] space-y-3 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-[var(--fb-border-light)] pb-2.5">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-user-check text-[#00965e]"></i>
-                    <h3 class="text-xs font-bold text-slate-900">Кабинет супервизора: Рассмотрение апелляций</h3>
+                    <i class="fa-solid fa-user-check text-[#00bc58]"></i>
+                    <h3 class="text-xs font-bold text-[var(--fb-text-primary)]">Кабинет супервизора: Рассмотрение апелляций</h3>
                 </div>
-                <button onclick="window.closeModal('modalSupervisor')" class="text-slate-400 hover:text-slate-600">
+                <button onclick="window.closeModal('modalSupervisor')" class="text-[var(--fb-text-muted)] hover:text-[var(--fb-text-primary)]">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
@@ -361,18 +382,18 @@
 
     <!-- Modal: Checklist Configuration Editor -->
     <div id="modalChecklist" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
-        <div class="bg-white rounded-lg max-w-3xl w-full p-5 shadow-xl border border-[#cbd5e1] space-y-3 max-h-[85vh] flex flex-col">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <div class="theme-modal rounded-xl max-w-3xl w-full p-5 shadow-2xl border border-[var(--fb-border)] space-y-3 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-[var(--fb-border-light)] pb-2.5">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-[#00965e]"></i>
-                    <h3 class="text-xs font-bold text-slate-900">Конфигурация чек-листа Freedom Broker</h3>
+                    <i class="fa-solid fa-sliders text-[#00bc58]"></i>
+                    <h3 class="text-xs font-bold text-[var(--fb-text-primary)]">Конфигурация чек-листа Freedom Broker</h3>
                 </div>
-                <button onclick="window.closeModal('modalChecklist')" class="text-slate-400 hover:text-slate-600">
+                <button onclick="window.closeModal('modalChecklist')" class="text-[var(--fb-text-muted)] hover:text-[var(--fb-text-primary)]">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <p class="text-[11px] text-slate-500">
+            <p class="text-[11px] text-[var(--fb-text-muted)]">
                 Настройка весов, шкал и добавление новых параметров контроля качества обслуживания клиентов Freedom Broker.
             </p>
 
@@ -380,15 +401,15 @@
                 <!-- Dynamically filled -->
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-200">
-                <button onclick="window.addNewCriterionRow()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded flex items-center gap-1">
+            <div class="flex items-center justify-between pt-2 border-t border-[var(--fb-border-light)]">
+                <button onclick="window.addNewCriterionRow()" class="px-2.5 py-1 theme-surface-subtle text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] text-xs font-medium rounded-lg flex items-center gap-1">
                     <i class="fa-solid fa-plus"></i> Добавить критерий
                 </button>
                 <div class="flex gap-2">
-                    <button onclick="window.closeModal('modalChecklist')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs">
+                    <button onclick="window.closeModal('modalChecklist')" class="px-3 py-1 theme-surface-subtle text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] rounded-lg text-xs">
                         Отмена
                     </button>
-                    <button onclick="window.saveChecklistConfig()" class="px-3.5 py-1 bg-[#00965e] hover:bg-[#007f50] text-white font-medium rounded text-xs">
+                    <button onclick="window.saveChecklistConfig()" class="px-3.5 py-1 bg-[#00bc58] hover:bg-[#00a84e] text-white font-medium rounded-lg text-xs">
                         Сохранить и применить
                     </button>
                 </div>
@@ -398,32 +419,32 @@
 
     <!-- Modal: API Sync by group_id -->
     <div id="modalSync" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
-        <div class="bg-white rounded-lg max-w-sm w-full p-5 shadow-xl border border-[#cbd5e1] space-y-3 text-xs">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <div class="theme-modal rounded-xl max-w-sm w-full p-5 shadow-2xl border border-[var(--fb-border)] space-y-3.5 text-xs">
+            <div class="flex items-center justify-between border-b border-[var(--fb-border-light)] pb-2.5">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-cloud-arrow-down text-[#00965e]"></i>
-                    <h3 class="text-xs font-bold text-slate-900">Импорт диалогов из CRM</h3>
+                    <i class="fa-solid fa-cloud-arrow-down text-[#00bc58]"></i>
+                    <h3 class="text-xs font-bold text-[var(--fb-text-primary)]">Импорт диалогов из CRM</h3>
                 </div>
-                <button onclick="window.closeModal('modalSync')" class="text-slate-400 hover:text-slate-600">
+                <button onclick="window.closeModal('modalSync')" class="text-[var(--fb-text-muted)] hover:text-[var(--fb-text-primary)]">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <p class="text-slate-500 text-[11px]">
+            <p class="text-[var(--fb-text-muted)] text-[11px]">
                 Укажите идентификатор группы обращений для синхронизации с корпоративным хранилищем:
             </p>
 
             <div>
-                <label class="block font-semibold text-slate-700 mb-1">Идентификатор группы (group_id):</label>
+                <label class="block font-semibold text-[var(--fb-text-secondary)] mb-1">Идентификатор группы (group_id):</label>
                 <input type="text" id="syncGroupIdInput" value="DEV" required 
-                    class="w-full py-1 px-2 bg-white border border-[#cbd5e1] rounded font-mono text-xs">
+                    class="w-full py-1.5 px-2.5 theme-input rounded-lg border border-[var(--fb-border)] font-mono text-xs">
             </div>
 
-            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button type="button" onclick="window.closeModal('modalSync')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs">
+            <div class="flex justify-end gap-2 pt-2 border-t border-[var(--fb-border-light)]">
+                <button type="button" onclick="window.closeModal('modalSync')" class="px-3 py-1 theme-surface-subtle text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] rounded-lg text-xs">
                     Отмена
                 </button>
-                <button type="button" id="btnRunSync" onclick="window.handleRunSync()" class="px-3.5 py-1 bg-[#00965e] hover:bg-[#007f50] text-white font-medium rounded text-xs">
+                <button type="button" id="btnRunSync" onclick="window.handleRunSync()" class="px-3.5 py-1 bg-[#00bc58] hover:bg-[#00a84e] text-white font-medium rounded-lg text-xs">
                     Синхронизировать
                 </button>
             </div>

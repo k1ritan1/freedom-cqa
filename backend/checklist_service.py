@@ -156,7 +156,7 @@ def determine_criterion_chess_badge(
 ) -> str:
     """
     Returns one of the chess rating icon names matching assets/rating icons:
-    'brilliant', 'great', 'best', 'Excellent', 'Good', 'Book', 'Inaccuracy', 'Mistake', 'Miss', 'Blunder', 'Forced'
+    'brilliant', 'great', 'best', 'Excellent', 'Good', 'Book', 'Inaccuracy', 'Mistake', 'Miss', 'Blunder'
     """
     if detected_violation:
         return "Blunder"
@@ -164,21 +164,24 @@ def determine_criterion_chess_badge(
         return "NA"
 
     if crit_id == "severe_errors":
-        return "Blunder" if detected_violation or status == "YES" else "Good"
+        return "Blunder" if (detected_violation or status == "YES") else "Good"
 
+    # Strict status checks: if status is NO, it MUST be a penalizing badge
     if crit_id == "contact":
-        return "Book" if (status == "YES" or raw_score > 0) else "Miss"
+        return "Book" if status == "YES" else "Miss"
     if crit_id == "need":
-        return "best" if (status == "YES" or raw_score > 0) else "Inaccuracy"
+        return "best" if status == "YES" else "Inaccuracy"
     if crit_id == "identification":
-        return "Book" if (status == "YES" or raw_score > 0) else "Blunder"
+        return "Book" if status == "YES" else "Blunder"
     if crit_id == "empathy":
-        return "Excellent" if (status == "YES" or raw_score > 0) else "Mistake"
+        return "Excellent" if status == "YES" else "Mistake"
     if crit_id == "closing":
-        return "Book" if (status == "YES" or raw_score > 0) else "Miss"
+        return "Book" if status == "YES" else "Miss"
 
     if crit_id == "consultation":
-        if raw_score >= 20:
+        if status == "NO" or raw_score <= 0:
+            return "Blunder"
+        elif raw_score >= 20:
             return "brilliant"
         elif raw_score >= 15:
             return "Good"
@@ -190,7 +193,9 @@ def determine_criterion_chess_badge(
             return "Blunder"
 
     if crit_id == "dialogue_mgmt":
-        if raw_score >= 10:
+        if status == "NO" or raw_score <= 0:
+            return "Blunder"
+        elif raw_score >= 10:
             return "best"
         elif raw_score >= 7:
             return "Good"
@@ -201,15 +206,15 @@ def determine_criterion_chess_badge(
 
     # Generic fallback based on ratio
     ratio = raw_score / max_scale if max_scale > 0 else 0
+    if status == "NO" or ratio <= 0:
+        return "Miss"
     if ratio >= 1.0:
         return "best"
     elif ratio >= 0.7:
         return "Good"
     elif ratio >= 0.4:
         return "Inaccuracy"
-    elif ratio > 0:
-        return "Mistake"
-    return "Miss"
+    return "Mistake"
 
 def determine_overall_chess_badge(total_score: float, severe_violation: bool) -> str:
     """
@@ -217,17 +222,17 @@ def determine_overall_chess_badge(total_score: float, severe_violation: bool) ->
     """
     if severe_violation:
         return "Blunder"
-    if total_score >= 100.0:
+    if total_score >= 98.0:
         return "brilliant"
-    elif total_score >= 90.0:
+    elif total_score >= 88.0:
         return "great"
-    elif total_score >= 80.0:
+    elif total_score >= 78.0:
         return "best"
-    elif total_score >= 70.0:
+    elif total_score >= 68.0:
         return "Good"
-    elif total_score >= 60.0:
+    elif total_score >= 50.0:
         return "Inaccuracy"
-    elif total_score >= 40.0:
+    elif total_score >= 30.0:
         return "Mistake"
     elif total_score > 0.0:
         return "Miss"
@@ -253,7 +258,7 @@ def calculate_cqa_scores(raw_evaluations: Dict[str, Any], criteria: List[Dict[st
     for c in criteria:
         cid = c["id"]
         c_eval = raw_evaluations.get(cid, {})
-        status = c_eval.get("status", "NO")
+        status = str(c_eval.get("status", "NO")).strip().upper()
         is_na = c_eval.get("is_na", False) or status == "NA"
 
         # Check for severe error
@@ -277,12 +282,29 @@ def calculate_cqa_scores(raw_evaluations: Dict[str, Any], criteria: List[Dict[st
     for c in criteria:
         cid = c["id"]
         c_eval = raw_evaluations.get(cid, {})
-        status = c_eval.get("status", "NO")
+        status = str(c_eval.get("status", "NO")).strip().upper()
         is_na = (c_eval.get("is_na", False) or status == "NA") and c.get("allow_na", False)
-        raw_score = float(c_eval.get("raw_score", 0.0))
+        crit_type = c.get("type", "YES_NO")
         max_scale = float(c.get("max_scale", 1.0))
         weight = float(c.get("weight", 0.0))
         section = c.get("section", "ОБЩЕЕ")
+
+        # Rigorous score handling depending on status and type:
+        if status == "NO":
+            raw_score = 0.0
+        elif status == "NA" or is_na:
+            raw_score = 0.0
+            is_na = True
+            status = "NA"
+        elif crit_type in ("YES_NO", "YES_NO_NA"):
+            raw_score = max_scale if status == "YES" else 0.0
+        else:
+            # SCALE or SCALE_NA
+            try:
+                raw_score = float(c_eval.get("raw_score", 0.0))
+            except (ValueError, TypeError):
+                raw_score = 0.0
+            raw_score = min(max(raw_score, 0.0), max_scale)
 
         if section not in section_scores:
             section_scores[section] = {"earned": 0.0, "max": 0.0}
@@ -298,7 +320,7 @@ def calculate_cqa_scores(raw_evaluations: Dict[str, Any], criteria: List[Dict[st
         else:
             # Scaled score with redistribution
             redist_weight = round(weight * redistribute_factor, 4)
-            ratio = min(max(raw_score / max_scale, 0.0), 1.0) if max_scale > 0 else 0.0
+            ratio = (raw_score / max_scale) if max_scale > 0 else 0.0
             earned_score = round(ratio * redist_weight, 4)
             total_calculated_score += earned_score
             section_scores[section]["earned"] += earned_score
@@ -321,8 +343,8 @@ def calculate_cqa_scores(raw_evaluations: Dict[str, Any], criteria: List[Dict[st
             "redistributed_weight": round(redist_weight, 2),
             "final_score": round(earned_score, 2),
             "reasoning": c_eval.get("reasoning", ""),
-            "quote": c_eval.get("quote", ""),
-            "quote_timestamp": c_eval.get("quote_timestamp", ""),
+            "quote": c_eval.get("quote", "") if not is_na else "",
+            "quote_timestamp": c_eval.get("quote_timestamp", "") if not is_na else "",
             "chess_badge": chess_badge
         }
 

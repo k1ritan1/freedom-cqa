@@ -1,19 +1,20 @@
 /**
- * Freedom Broker CQA - High-Density Financial CRM Frontend Logic
- * Authentic Chess Move Ratings + Monolithic Criteria CRM
+ * Freedom Broker CQA - High-Density Enterprise Financial CRM
+ * Supports full Dark (default) and Light themes, authentic Chess Ratings,
+ * high readability criteria cards, and seamless transcript navigation.
  */
 
 const CHESS_ICONS = {
-    'brilliant': { file: 'brilliant.png', label: 'Блестяще', badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-300' },
-    'great': { file: 'great.png', label: 'Отлично', badgeClass: 'text-blue-700 bg-blue-50 border-blue-300' },
-    'best': { file: 'best.png', label: 'Лучший ход', badgeClass: 'text-teal-700 bg-teal-50 border-teal-300' },
-    'Excellent': { file: 'Excellent.png', label: 'Превосходно', badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-300' },
-    'Good': { file: 'Good.png', label: 'Хорошо', badgeClass: 'text-emerald-800 bg-emerald-50 border-emerald-200' },
-    'Book': { file: 'Book.png', label: 'По регламенту', badgeClass: 'text-amber-800 bg-amber-50 border-amber-300' },
-    'Inaccuracy': { file: 'Inaccuracy.png', label: 'Неточность', badgeClass: 'text-yellow-800 bg-yellow-50 border-yellow-300' },
-    'Mistake': { file: 'Mistake.png', label: 'Ошибка', badgeClass: 'text-orange-800 bg-orange-50 border-orange-300' },
-    'Miss': { file: 'Miss.png', label: 'Пропуск', badgeClass: 'text-rose-800 bg-rose-50 border-rose-300' },
-    'Blunder': { file: 'Blunder.png', label: 'Зевок / Нарушение', badgeClass: 'text-red-900 bg-red-100 border-red-400' }
+    'brilliant': { file: 'brilliant.png', label: 'Блестяще', badgeClass: 'text-emerald-400 bg-emerald-950/40 border-emerald-500/40' },
+    'great': { file: 'great.png', label: 'Отлично', badgeClass: 'text-blue-400 bg-blue-950/40 border-blue-500/40' },
+    'best': { file: 'best.png', label: 'Лучший ход', badgeClass: 'text-teal-400 bg-teal-950/40 border-teal-500/40' },
+    'Excellent': { file: 'Excellent.png', label: 'Превосходно', badgeClass: 'text-emerald-400 bg-emerald-950/40 border-emerald-500/40' },
+    'Good': { file: 'Good.png', label: 'Хорошо', badgeClass: 'text-emerald-400 bg-emerald-950/40 border-emerald-500/40' },
+    'Book': { file: 'Book.png', label: 'По регламенту', badgeClass: 'text-blue-400 bg-blue-950/40 border-blue-500/40' },
+    'Inaccuracy': { file: 'Inaccuracy.png', label: 'Неточность', badgeClass: 'text-yellow-400 bg-yellow-950/40 border-yellow-500/40' },
+    'Mistake': { file: 'Mistake.png', label: 'Ошибка', badgeClass: 'text-orange-400 bg-orange-950/40 border-orange-500/40' },
+    'Miss': { file: 'Miss.png', label: 'Пропуск', badgeClass: 'text-rose-400 bg-rose-950/40 border-rose-500/40' },
+    'Blunder': { file: 'Blunder.png', label: 'Зевок / Нарушение', badgeClass: 'text-red-400 bg-red-950/60 border-red-500/60' }
 };
 
 let state = {
@@ -30,11 +31,53 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+    initTheme();
     setupEventListeners();
     await loadChecklist();
     await loadDialogues();
     await refreshAnalytics();
     checkBatchProgress();
+}
+
+// ----------------- Theme Switcher ----------------- //
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('cqa-theme') || 'dark';
+    setTheme(savedTheme);
+
+    const toggleBtn = document.getElementById('btnThemeToggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleTheme);
+    }
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+        const icon = document.getElementById('themeIcon');
+        const label = document.getElementById('themeLabel');
+        if (icon) icon.className = 'fa-solid fa-sun text-amber-400';
+        if (label) label.innerText = 'Светлая';
+    } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+        const icon = document.getElementById('themeIcon');
+        const label = document.getElementById('themeLabel');
+        if (icon) icon.className = 'fa-solid fa-moon text-slate-300';
+        if (label) label.innerText = 'Темная';
+    }
+    localStorage.setItem('cqa-theme', theme);
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    setTheme(current === 'dark' ? 'light' : 'dark');
+    renderDialogueList();
+    if (state.activeDialogue) {
+        renderDialogueInspector();
+    }
 }
 
 function setupEventListeners() {
@@ -143,7 +186,7 @@ function renderDialogueList() {
 
     if (filtered.length === 0) {
         container.innerHTML = `
-            <div class="p-6 text-center text-slate-400 text-xs">
+            <div class="p-6 text-center text-[var(--fb-text-muted)] text-xs">
                 <i class="fa-solid fa-filter text-base mb-1"></i>
                 <p>Нет диалогов по заданным фильтрам</p>
             </div>
@@ -154,31 +197,42 @@ function renderDialogueList() {
     container.innerHTML = filtered.map(d => {
         const isActive = state.activeDialogue && state.activeDialogue.conversation_id === d.conversation_id;
         const activeClass = isActive 
-            ? 'bg-emerald-50/80 border-l-[3px] border-l-[#00965e]' 
-            : 'hover:bg-slate-50 border-l-[3px] border-l-transparent';
+            ? 'bg-[var(--fb-surface-subtle)] border-l-[3px] border-l-[#00bc58] shadow-xs' 
+            : 'hover:bg-[var(--fb-surface-hover)] border-l-[3px] border-l-transparent';
         
         let scoreBadge = '';
         if (d.eval_status === 'completed') {
             const badgeKey = d.severe_violation ? 'Blunder' : (d.chess_badge || 'Book');
             const iconInfo = getChessIconInfo(badgeKey);
+            const score = d.total_score;
+
+            // Tier-based color coding
+            let tierClass = 'text-emerald-400 bg-emerald-950/40 border-emerald-600/40';
+            if (d.severe_violation || score < 60) {
+                tierClass = 'text-rose-400 bg-rose-950/40 border-rose-600/40';
+            } else if (score < 80) {
+                tierClass = 'text-amber-400 bg-amber-950/40 border-amber-600/40';
+            } else if (score < 95) {
+                tierClass = 'text-teal-400 bg-teal-950/40 border-teal-600/40';
+            }
 
             if (iconInfo) {
                 scoreBadge = `
-                    <div class="flex items-center gap-1 shrink-0 font-mono font-bold text-xs ${iconInfo.badgeClass} px-1.5 py-0.5 rounded border" title="${iconInfo.label}">
+                    <div class="flex items-center gap-1 shrink-0 font-mono font-bold text-xs ${tierClass} px-1.5 py-0.5 rounded-md border" title="${iconInfo.label}">
                         <img src="/assets/rating icons/${iconInfo.file}" alt="${badgeKey}" class="chess-icon-xs">
-                        <span>${d.total_score.toFixed(1)}</span>
+                        <span>${score.toFixed(1)}</span>
                     </div>
                 `;
             } else {
-                scoreBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${d.total_score.toFixed(1)}</span>`;
+                scoreBadge = `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold ${tierClass} border">${score.toFixed(1)}</span>`;
             }
         } else {
-            scoreBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">Ожидает</span>`;
+            scoreBadge = `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-medium theme-surface-subtle text-[var(--fb-text-muted)] border border-[var(--fb-border)]">Ожидает</span>`;
         }
 
         const channelIcon = d.channel === 'voice call' 
-            ? '<i class="fa-solid fa-phone text-purple-600 text-[10px]"></i>' 
-            : '<i class="fa-regular fa-comments text-[#00965e] text-[10px]"></i>';
+            ? '<i class="fa-solid fa-phone text-purple-400 text-[10px]"></i>' 
+            : '<i class="fa-regular fa-comments text-[var(--fb-accent-green)] text-[10px]"></i>';
 
         const appealsDot = d.appeals_count > 0 
             ? `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Есть апелляции"></span>` 
@@ -189,21 +243,21 @@ function renderDialogueList() {
             : (d.channel === 'voice call' ? 'Аудиозапись входящего звонка' : 'Диалог без текста');
 
         return `
-            <div onclick="window.loadDialogue('${d.conversation_id}')" class="px-3 py-2 cursor-pointer transition ${activeClass}">
-                <div class="flex items-center justify-between gap-1">
+            <div onclick="window.loadDialogue('${d.conversation_id}')" class="px-3 py-2.5 cursor-pointer transition ${activeClass}">
+                <div class="flex items-center justify-between gap-1.5">
                     <div class="flex items-center gap-1.5 min-w-0">
-                        <span class="w-4 h-4 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                        <span class="w-4 h-4 rounded bg-[var(--fb-surface-subtle)] flex items-center justify-center shrink-0">
                             ${channelIcon}
                         </span>
-                        <span class="font-bold text-slate-900 font-mono truncate text-[11px]">${d.conversation_id}</span>
-                        <span class="px-1 py-0.2 rounded text-[9px] font-bold bg-slate-200 text-slate-700 shrink-0">${d.language}</span>
+                        <span class="font-bold text-[var(--fb-text-primary)] font-mono truncate text-[11px]">${d.conversation_id}</span>
+                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[var(--fb-tag-bg)] text-[var(--fb-tag-text)] shrink-0">${d.language}</span>
                         ${appealsDot}
                     </div>
                     <div class="shrink-0">
                         ${scoreBadge}
                     </div>
                 </div>
-                <div class="text-[11px] text-slate-500 truncate mt-0.5 pl-5">
+                <div class="text-[11px] text-[var(--fb-text-muted)] truncate mt-1 pl-5">
                     ${snippetText}
                 </div>
             </div>
@@ -229,12 +283,12 @@ function renderDialogueInspector() {
     const chIcon = document.getElementById('activeChannelIcon');
     const navAudioBadge = document.getElementById('navActiveAudioBadge');
     if (dlg.channel === 'voice call') {
-        chIcon.innerHTML = '<i class="fa-solid fa-phone text-purple-600"></i>';
-        chIcon.className = 'w-8 h-8 rounded bg-purple-50 text-purple-600 flex items-center justify-center text-xs shrink-0 border border-purple-200';
+        chIcon.innerHTML = '<i class="fa-solid fa-phone text-purple-400"></i>';
+        chIcon.className = 'w-8 h-8 rounded-lg bg-purple-950/40 text-purple-400 flex items-center justify-center text-xs shrink-0 border border-purple-500/40';
         navAudioBadge.classList.remove('hidden');
     } else {
-        chIcon.innerHTML = '<i class="fa-regular fa-comments text-[#00965e]"></i>';
-        chIcon.className = 'w-8 h-8 rounded bg-emerald-50 text-[#00965e] flex items-center justify-center text-xs shrink-0 border border-emerald-200';
+        chIcon.innerHTML = '<i class="fa-regular fa-comments text-[var(--fb-accent-green)]"></i>';
+        chIcon.className = 'w-8 h-8 rounded-lg bg-[var(--fb-accent-green-subtle)] text-[var(--fb-accent-green)] flex items-center justify-center text-xs shrink-0 border border-[var(--fb-border)]';
         navAudioBadge.classList.add('hidden');
     }
 
@@ -283,7 +337,7 @@ function renderDialogueInspector() {
         }
 
         metaSpan.classList.remove('hidden');
-        metaSpan.innerText = `· Задержка: ${evalData.latency_ms}мс · Расход: $${evalData.cost_usd.toFixed(4)}`;
+        metaSpan.innerText = `· Задержка: ${evalData.latency_ms}мс · Модель: ${evalData.model_used || 'Groq'}`;
 
         noEvalNotice.classList.add('hidden');
         evalCard.classList.remove('hidden');
@@ -320,14 +374,19 @@ function renderSectionScores(sections) {
         const shortName = sectionLabels[name] || name;
         const pct = val.max > 0 ? Math.round((val.earned / val.max) * 100) : 0;
 
+        // Color coding for section progress
+        let barColor = 'bg-[#00bc58]';
+        if (pct < 50) barColor = 'bg-rose-500';
+        else if (pct < 80) barColor = 'bg-amber-500';
+
         return `
-            <div class="bg-white p-2.5 rounded border border-[#cbd5e1] shadow-2xs">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-[10px] font-bold text-slate-700 uppercase tracking-tight truncate">${shortName}</span>
-                    <span class="text-xs font-mono font-bold text-slate-900">${val.earned} / ${val.max} б</span>
+            <div class="theme-surface p-3 rounded-xl border border-[var(--fb-border)] shadow-2xs">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight truncate">${shortName}</span>
+                    <span class="text-xs font-mono font-bold text-[var(--fb-text-primary)]">${val.earned} / ${val.max} б</span>
                 </div>
-                <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
-                    <div class="bg-[#00965e] h-1 transition-all duration-300" style="width: ${pct}%"></div>
+                <div class="w-full bg-[var(--fb-surface-subtle)] rounded-full h-1.5 overflow-hidden">
+                    <div class="${barColor} h-1.5 transition-all duration-300" style="width: ${pct}%"></div>
                 </div>
             </div>
         `;
@@ -347,25 +406,26 @@ function renderMonolithicCriteria(criteriaResults) {
         const isNA = item.is_na || item.status === 'NA';
         const badgeKey = item.chess_badge;
         const iconInfo = (!isNA && badgeKey) ? getChessIconInfo(badgeKey) : null;
+        const isViolation = (!isNA && (item.final_score === 0 || badgeKey === 'Blunder' || item.status === 'NO'));
 
-        // Clean Chess Badge or N/A Badge (NO Forced!)
+        // Chess Badge or N/A Badge
         let chessBadgeHtml = '';
         if (isNA) {
             chessBadgeHtml = `
-                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-700 font-bold text-[10px]">
+                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-[var(--fb-border)] theme-surface-subtle text-[var(--fb-text-muted)] font-bold text-[10px]">
                     <span>N/A</span>
-                    <span class="font-normal text-slate-500 text-[9px]">(не требуется)</span>
+                    <span class="font-normal text-[9px]">(не требуется)</span>
                 </div>
             `;
         } else if (iconInfo) {
             chessBadgeHtml = `
-                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border ${iconInfo.badgeClass} font-bold text-[11px]" title="${iconInfo.label}">
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${iconInfo.badgeClass} font-bold text-[11px]" title="${iconInfo.label}">
                     <img src="/assets/rating icons/${iconInfo.file}" alt="${badgeKey}" class="chess-icon-sm">
                     <span>${iconInfo.label}</span>
                 </div>
             `;
         } else {
-            chessBadgeHtml = `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">${item.status}</span>`;
+            chessBadgeHtml = `<span class="px-2 py-0.5 rounded-md theme-surface-subtle text-[var(--fb-text-secondary)] font-bold text-[10px]">${item.status}</span>`;
         }
 
         // Score display
@@ -373,16 +433,24 @@ function renderMonolithicCriteria(criteriaResults) {
         if (isNA) {
             scoreDisplay = `
                 <div class="text-right">
-                    <span class="font-mono font-bold text-slate-400 text-xs">—</span>
-                    <div class="text-[10px] text-slate-400">вес перераспределен</div>
+                    <span class="font-mono font-bold text-[var(--fb-text-muted)] text-xs">—</span>
+                    <div class="text-[10px] text-[var(--fb-text-muted)]">вес перераспределен</div>
+                </div>
+            `;
+        } else if (isViolation) {
+            scoreDisplay = `
+                <div class="text-right">
+                    <span class="font-mono font-bold text-rose-500 text-xs">${item.final_score.toFixed(2)}</span>
+                    <span class="text-[var(--fb-text-muted)] font-mono text-[11px]">/ ${item.redistributed_weight.toFixed(2)} б</span>
+                    <div class="text-[10px] text-[var(--fb-text-muted)] font-mono">(баз. вес: ${item.base_weight})</div>
                 </div>
             `;
         } else {
             scoreDisplay = `
                 <div class="text-right">
-                    <span class="font-mono font-bold text-slate-900 text-xs">${item.final_score.toFixed(2)}</span>
-                    <span class="text-slate-400 font-mono text-[11px]">/ ${item.redistributed_weight.toFixed(2)} б</span>
-                    <div class="text-[10px] text-slate-400 font-mono">(баз. вес: ${item.base_weight})</div>
+                    <span class="font-mono font-bold text-[var(--fb-accent-green)] text-xs">${item.final_score.toFixed(2)}</span>
+                    <span class="text-[var(--fb-text-muted)] font-mono text-[11px]">/ ${item.redistributed_weight.toFixed(2)} б</span>
+                    <div class="text-[10px] text-[var(--fb-text-muted)] font-mono">(баз. вес: ${item.base_weight})</div>
                 </div>
             `;
         }
@@ -391,39 +459,43 @@ function renderMonolithicCriteria(criteriaResults) {
             state.activeDialogue.appeals.some(a => a.criterion_id === item.criterion_id && a.status === 'pending');
 
         const disputeAction = isDisputed 
-            ? '<span class="text-[10px] text-amber-700 font-semibold flex items-center gap-1 shrink-0"><i class="fa-solid fa-clock"></i> В апелляции</span>'
-            : `<button onclick="window.openAppealModal('${item.criterion_id}')" class="px-2 py-1 text-[11px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded border border-[#cbd5e1] transition shrink-0">Оспорить</button>`;
+            ? '<span class="text-[10px] text-amber-500 font-semibold flex items-center gap-1 shrink-0"><i class="fa-solid fa-clock"></i> В апелляции</span>'
+            : `<button onclick="window.openAppealModal('${item.criterion_id}')" class="px-2 py-1 text-[11px] text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] hover:bg-[var(--fb-surface-subtle)] rounded-lg border border-[var(--fb-border)] transition shrink-0">Оспорить</button>`;
 
-        // Integrated Quote block directly below the criterion
+        // Integrated Quote block directly below the criterion (ONLY IF QUOTE EXISTS AND NOT EMPTY)
         let quoteHtml = '';
-        if (item.quote) {
-            const cleanQuoteForCall = item.quote.replace(/'/g, "\\'");
+        if (item.quote && item.quote.trim().length > 0 && !isNA) {
+            const cleanQuoteForCall = item.quote.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const quoteClass = isViolation ? 'quote-box quote-box-violation' : 'quote-box';
             quoteHtml = `
-                <div onclick="window.jumpToQuote('${item.quote_timestamp}', '${cleanQuoteForCall}')" 
-                    class="mt-1.5 p-2 bg-slate-50 hover:bg-emerald-50/70 border border-slate-200 hover:border-emerald-300 rounded cursor-pointer transition flex items-start gap-2 text-[11px] text-slate-800"
+                <div onclick="window.jumpToQuote('${item.quote_timestamp || ''}', '${cleanQuoteForCall}')" 
+                    class="mt-2 p-2.5 rounded-lg cursor-pointer transition flex items-start gap-2.5 text-[11px] ${quoteClass}"
                     title="Кликните для перехода к фразе в транскрипте">
-                    <i class="fa-solid fa-quote-left text-[#00965e] mt-0.5 shrink-0 text-xs"></i>
+                    <i class="fa-solid fa-quote-left text-[var(--fb-accent-green)] mt-0.5 shrink-0 text-xs"></i>
                     <div class="min-w-0 flex-1">
-                        <span class="font-mono font-bold text-emerald-800 mr-1">[${item.quote_timestamp || '—'}]</span>
-                        <span class="italic font-medium">"${item.quote}"</span>
+                        <span class="font-mono font-bold text-[var(--fb-accent-green)] mr-1.5">[${item.quote_timestamp || '—'}]</span>
+                        <span class="italic text-[var(--fb-text-primary)] font-medium">"${item.quote}"</span>
                     </div>
-                    <span class="text-[10px] text-emerald-700 font-semibold shrink-0 ml-2">Перейти ↵</span>
+                    <span class="text-[10px] text-[var(--fb-accent-green)] font-semibold shrink-0 ml-2">Перейти ↵</span>
                 </div>
             `;
         }
 
+        // Highlight violation row border
+        const rowHighlight = isViolation ? 'border-l-[3px] border-l-rose-500 bg-rose-950/10' : '';
+
         return `
-            <div class="p-3 hover:bg-slate-50/60 transition">
+            <div class="p-3.5 hover:bg-[var(--fb-surface-hover)] transition ${rowHighlight}">
                 <!-- Top Row: Icon + Name + Score + Action -->
                 <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 min-w-0 flex-1">
-                        <span class="font-mono font-bold text-slate-400 text-xs shrink-0">${item.code || '—'}</span>
+                    <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                        <span class="font-mono font-bold text-[var(--fb-text-muted)] text-xs shrink-0">${item.code || ''}</span>
                         <div class="shrink-0">
                             ${chessBadgeHtml}
                         </div>
                         <div class="min-w-0">
-                            <span class="font-bold text-slate-900 text-xs">${item.name}</span>
-                            <span class="text-[10px] text-slate-400 uppercase tracking-tight ml-1">• ${item.section}</span>
+                            <span class="font-bold text-[var(--fb-text-primary)] text-xs">${item.name}</span>
+                            <span class="text-[10px] text-[var(--fb-text-muted)] uppercase tracking-tight ml-1.5">• ${item.section}</span>
                         </div>
                     </div>
 
@@ -434,8 +506,8 @@ function renderMonolithicCriteria(criteriaResults) {
                 </div>
 
                 <!-- Bottom Block: Reasoning & Quote in-place -->
-                <div class="mt-1.5 pl-6">
-                    <div class="text-[11px] text-slate-600 leading-relaxed">${item.reasoning || '—'}</div>
+                <div class="mt-2 pl-7">
+                    <div class="text-[11px] text-[var(--fb-text-secondary)] leading-relaxed font-normal">${item.reasoning || ''}</div>
                     ${quoteHtml}
                 </div>
             </div>
@@ -447,7 +519,7 @@ function renderTranscript() {
     const list = document.getElementById('transcriptMessagesList');
     const dlg = state.activeDialogue;
     if (!dlg || !dlg.transcript) {
-        list.innerHTML = '<p class="text-center text-slate-400 text-xs py-6">Транскрипт пуст</p>';
+        list.innerHTML = '<p class="text-center text-[var(--fb-text-muted)] text-xs py-6">Транскрипт пуст</p>';
         return;
     }
 
@@ -461,33 +533,33 @@ function renderTranscript() {
         let alignClass = '';
 
         if (isOperator) {
-            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Оператор</span>';
-            bubbleClass = 'bg-white border-l-3 border-l-[#00965e] border-slate-200';
+            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-700/50">Оператор</span>';
+            bubbleClass = 'theme-surface border-l-3 border-l-[#00bc58] border-[var(--fb-border)]';
             alignClass = 'ml-6';
         } else if (isClient) {
-            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Клиент</span>';
-            bubbleClass = 'bg-blue-50/40 border-l-3 border-l-blue-500 border-slate-200';
+            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950/50 text-blue-300 border border-blue-700/50">Клиент</span>';
+            bubbleClass = 'theme-surface-subtle border-l-3 border-l-blue-500 border-[var(--fb-border)]';
             alignClass = 'mr-6';
         } else if (isBot) {
-            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-purple-100 text-purple-700">AI-Бот</span>';
-            bubbleClass = 'bg-slate-50 border border-slate-200';
+            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-950/50 text-purple-300 border border-purple-700/50">AI-Бот</span>';
+            bubbleClass = 'theme-surface border border-purple-500/40';
             alignClass = 'mx-4';
         } else {
-            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-200 text-slate-600">Система</span>';
-            bubbleClass = 'bg-slate-100 border border-slate-200 text-slate-500 italic text-[11px]';
+            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-medium theme-surface-subtle text-[var(--fb-text-muted)]">Система</span>';
+            bubbleClass = 'theme-surface-subtle border border-[var(--fb-border-light)] text-[var(--fb-text-muted)] italic text-[11px]';
             alignClass = 'mx-6';
         }
 
         return `
             <div id="transcript-msg-${idx}" data-ts="${msg.timestamp}" data-text="${encodeURIComponent(msg.text)}" 
-                class="p-2.5 rounded border transition shadow-2xs text-xs ${bubbleClass} ${alignClass}">
-                <div class="flex items-center justify-between mb-1">
-                    <div class="flex items-center gap-1.5">
+                class="p-3 rounded-xl border transition shadow-2xs text-xs ${bubbleClass} ${alignClass}">
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
                         ${roleBadge}
-                        <span class="font-mono text-[10px] text-slate-400">${msg.timestamp}</span>
+                        <span class="font-mono text-[10px] text-[var(--fb-text-muted)]">${msg.timestamp}</span>
                     </div>
                 </div>
-                <div class="text-slate-800 leading-relaxed">
+                <div class="text-[var(--fb-text-primary)] leading-relaxed">
                     ${msg.text}
                 </div>
             </div>
@@ -501,8 +573,8 @@ function renderAppealsList() {
     const dlg = state.activeDialogue;
     if (!dlg || !dlg.appeals || dlg.appeals.length === 0) {
         container.innerHTML = `
-            <div class="p-6 text-center text-slate-400 text-xs">
-                <i class="fa-solid fa-scale-balanced text-xl text-slate-300 mb-1"></i>
+            <div class="p-6 text-center text-[var(--fb-text-muted)] text-xs">
+                <i class="fa-solid fa-scale-balanced text-xl text-[var(--fb-text-muted)] mb-1"></i>
                 <p>По данному диалогу апелляций пока нет.</p>
             </div>
         `;
@@ -519,34 +591,34 @@ function renderAppealsList() {
         
         let statusBadge = '';
         if (isPending) {
-            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300">На рассмотрении</span>';
+            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/50 text-amber-300 border border-amber-600/50">На рассмотрении</span>';
         } else if (isApproved) {
-            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">Одобрено</span>';
+            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-600/50">Одобрено</span>';
         } else {
-            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-300">Отклонено</span>';
+            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/50 text-rose-300 border border-rose-600/50">Отклонено</span>';
         }
 
         let resolutionBlock = '';
         if (!isPending) {
             resolutionBlock = `
-                <div class="mt-2 pt-2 border-t border-slate-200 text-xs">
-                    <div class="font-semibold text-slate-700">Решение супервизора:</div>
-                    <div class="text-slate-600 italic">"${a.supervisor_comment || 'Без комментария'}"</div>
-                    <div class="text-[11px] text-slate-400 mt-0.5">Итоговый балл: <strong>${a.resolved_score}</strong> (${a.resolved_at || ''})</div>
+                <div class="mt-2 pt-2 border-t border-[var(--fb-border-light)] text-xs">
+                    <div class="font-semibold text-[var(--fb-text-primary)]">Решение супервизора:</div>
+                    <div class="text-[var(--fb-text-secondary)] italic">"${a.supervisor_comment || 'Без комментария'}"</div>
+                    <div class="text-[11px] text-[var(--fb-text-muted)] mt-0.5">Итоговый балл: <strong>${a.resolved_score}</strong> (${a.resolved_at || ''})</div>
                 </div>
             `;
         }
 
         return `
-            <div class="p-2.5 bg-slate-50 rounded border border-[#cbd5e1] text-xs space-y-1">
+            <div class="p-3 theme-surface-subtle rounded-xl border border-[var(--fb-border)] text-xs space-y-1.5">
                 <div class="flex items-center justify-between">
-                    <span class="font-bold text-slate-800">Критерий: ${a.criterion_id}</span>
+                    <span class="font-bold text-[var(--fb-text-primary)]">Критерий: ${a.criterion_id}</span>
                     ${statusBadge}
                 </div>
-                <div class="text-slate-600">
-                    Оценка AI: <strong>${a.original_score}</strong> → Запрос оператора: <strong class="text-amber-700">${a.proposed_score}</strong>
+                <div class="text-[var(--fb-text-secondary)]">
+                    Оценка AI: <strong>${a.original_score}</strong> → Запрос оператора: <strong class="text-amber-400">${a.proposed_score}</strong>
                 </div>
-                <div class="text-slate-700 italic bg-white p-2 rounded border border-slate-200">
+                <div class="text-[var(--fb-text-primary)] italic theme-surface p-2.5 rounded-lg border border-[var(--fb-border-light)]">
                     "${a.operator_comment}"
                 </div>
                 ${resolutionBlock}
@@ -563,10 +635,10 @@ window.switchTab = function(tabName) {
         const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
         const content = document.getElementById(`tabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
         if (t === tabName) {
-            btn.className = 'px-3 py-1 font-semibold rounded bg-white text-slate-900 shadow-2xs transition';
+            btn.className = 'px-3 py-1 font-semibold rounded-md bg-[var(--fb-surface)] text-[var(--fb-text-primary)] shadow-2xs transition';
             content.classList.remove('hidden');
         } else {
-            btn.className = 'px-3 py-1 font-medium rounded text-slate-600 hover:text-slate-900 transition';
+            btn.className = 'px-3 py-1 font-medium rounded-md text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] transition';
             content.classList.add('hidden');
         }
     });
@@ -606,7 +678,7 @@ window.jumpToQuote = function(timestamp, quoteText) {
                 target.classList.remove('highlight-pulse');
             }, 2500);
         }
-    }, 100);
+    }, 120);
 };
 
 window.openModal = function(id) {
@@ -648,92 +720,98 @@ window.handleAppealSubmit = async function(e) {
     const dlg = state.activeDialogue;
     if (!dlg) return;
 
-    const payload = {
-        conversation_id: dlg.conversation_id,
-        criterion_id: document.getElementById('appealCriterionSelect').value,
-        proposed_score: parseFloat(document.getElementById('appealProposedScore').value),
-        operator_comment: document.getElementById('appealOperatorComment').value
-    };
+    const criterionId = document.getElementById('appealCriterionSelect').value;
+    const proposedScore = parseFloat(document.getElementById('appealProposedScore').value);
+    const comment = document.getElementById('appealOperatorComment').value.trim();
 
     try {
         const res = await fetch('/api/appeals', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                conversation_id: dlg.conversation_id,
+                criterion_id: criterionId,
+                proposed_score: proposedScore,
+                operator_comment: comment
+            })
         });
+
         if (res.ok) {
             closeModal('modalAppeal');
+            alert('Апелляция успешно направлена супервизору!');
             await loadDialogue(dlg.conversation_id);
             await refreshAnalytics();
-            window.switchTab('appeals');
         } else {
             const err = await res.json();
-            alert(`Ошибка: ${err.detail || 'Не удалось отправить апелляцию'}`);
+            alert(`Ошибка подачи апелляции: ${err.detail || 'Неизвестная ошибка'}`);
         }
-    } catch (e) {
-        console.error('Failed to submit appeal:', e);
+    } catch (err) {
+        console.error('Failed to submit appeal:', err);
     }
 };
 
-window.openSupervisorModal = async function() {
+// ----------------- Supervisor Cabinet ----------------- //
+
+async function openSupervisorModal() {
+    openModal('modalSupervisor');
+    const container = document.getElementById('supervisorAppealsList');
+    container.innerHTML = '<p class="text-center text-[var(--fb-text-muted)] py-4">Загрузка апелляций...</p>';
+
     try {
         const res = await fetch('/api/appeals/pending');
         const appeals = await res.json();
-        const container = document.getElementById('supervisorAppealsList');
 
         if (appeals.length === 0) {
             container.innerHTML = `
-                <div class="p-6 text-center text-slate-400 text-xs">
-                    <i class="fa-solid fa-check text-xl text-emerald-500 mb-1"></i>
-                    <p>Все апелляции рассмотрены! Нет ожидающих обращений.</p>
+                <div class="p-8 text-center text-[var(--fb-text-muted)]">
+                    <i class="fa-solid fa-check-double text-2xl text-[var(--fb-accent-green)] mb-2"></i>
+                    <p class="font-medium">Все апелляции рассмотрены!</p>
                 </div>
             `;
-        } else {
-            container.innerHTML = appeals.map(a => `
-                <div class="p-3 bg-slate-50 rounded border border-[#cbd5e1] space-y-2">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-bold text-slate-900 font-mono">${a.conversation_id}</span>
-                            <span class="px-1 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-700">${a.language}</span>
-                            <span class="px-1 py-0.2 rounded text-[10px] font-semibold bg-slate-200 text-slate-600">${a.channel}</span>
-                        </div>
-                        <span class="font-bold text-amber-800 font-mono text-[11px]">Критерий: ${a.criterion_id}</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 bg-white p-2 rounded border border-slate-200 text-xs">
-                        <div>Исходный балл AI: <strong class="font-mono">${a.original_score}</strong></div>
-                        <div>Запрашиваемый балл: <strong class="font-mono text-[#00965e]">${a.proposed_score}</strong></div>
-                    </div>
-
-                    <div class="text-slate-700 italic bg-amber-50/50 p-2 rounded border border-amber-200/60 text-xs">
-                        "${a.operator_comment}"
-                    </div>
-
-                    <div class="flex items-center gap-2 pt-1">
-                        <input type="text" id="supComment-${a.id}" placeholder="Комментарий супервизора..." 
-                            class="flex-1 py-1 px-2 bg-white border border-[#cbd5e1] rounded text-xs">
-                        <button onclick="window.resolveSupervisorAppeal(${a.id}, 'approved')" 
-                            class="px-3 py-1 bg-[#00965e] hover:bg-[#007f50] text-white font-medium rounded text-xs transition">
-                            Одобрить
-                        </button>
-                        <button onclick="window.resolveSupervisorAppeal(${a.id}, 'rejected')" 
-                            class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded text-xs transition">
-                            Отклонить
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            return;
         }
 
-        openModal('modalSupervisor');
+        container.innerHTML = appeals.map(a => `
+            <div class="p-3 theme-surface-subtle rounded-xl border border-[var(--fb-border)] space-y-2">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="font-bold font-mono text-[var(--fb-text-primary)] text-xs">${a.conversation_id}</span>
+                        <span class="text-[11px] text-[var(--fb-text-muted)] ml-2">• Критерий: <strong>${a.criterion_id}</strong></span>
+                    </div>
+                    <span class="text-[10px] text-[var(--fb-text-muted)]">${a.created_at || ''}</span>
+                </div>
+
+                <div class="text-[11px] text-[var(--fb-text-secondary)]">
+                    Балл AI: <strong>${a.original_score}</strong> → Запрос оператора: <strong class="text-amber-400">${a.proposed_score}</strong>
+                </div>
+
+                <div class="italic text-[11px] theme-surface p-2 rounded-lg border border-[var(--fb-border-light)] text-[var(--fb-text-primary)]">
+                    "${a.operator_comment}"
+                </div>
+
+                <div class="flex items-center gap-2 pt-2 border-t border-[var(--fb-border-light)]">
+                    <input type="text" id="sup_comment_${a.id}" placeholder="Комментарий супервизора..." 
+                        class="flex-1 py-1 px-2 text-xs theme-input rounded-lg border border-[var(--fb-border)]">
+                    
+                    <button onclick="window.resolveAppeal(${a.id}, 'approved', ${a.proposed_score})" 
+                        class="px-2.5 py-1 bg-[#00bc58] hover:bg-[#00a84e] text-white rounded-lg text-xs font-medium flex items-center gap-1 transition">
+                        <i class="fa-solid fa-check"></i> Одобрить
+                    </button>
+                    <button onclick="window.resolveAppeal(${a.id}, 'rejected', ${a.original_score})" 
+                        class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium flex items-center gap-1 transition">
+                        <i class="fa-solid fa-xmark"></i> Отклонить
+                    </button>
+                </div>
+            </div>
+        `).join('');
     } catch (e) {
         console.error('Failed to load pending appeals:', e);
     }
-};
+}
 
-window.resolveSupervisorAppeal = async function(appealId, status) {
-    const commentInput = document.getElementById(`supComment-${appealId}`);
-    const supervisorComment = commentInput ? commentInput.value.trim() : '';
+window.resolveAppeal = async function(appealId, status, score) {
+    const commentInput = document.getElementById(`sup_comment_${appealId}`);
+    const comment = commentInput ? commentInput.value.trim() : '';
 
     try {
         const res = await fetch(`/api/appeals/${appealId}/resolve`, {
@@ -741,61 +819,56 @@ window.resolveSupervisorAppeal = async function(appealId, status) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 status: status,
-                supervisor_comment: supervisorComment || (status === 'approved' ? 'Одобрено супервизором' : 'Отклонено')
+                supervisor_comment: comment || (status === 'approved' ? 'Согласовано супервизором' : 'Отклонено супервизором'),
+                resolved_score: score
             })
         });
 
         if (res.ok) {
-            await window.openSupervisorModal();
+            await openSupervisorModal();
+            await refreshAnalytics();
             if (state.activeDialogue) {
                 await loadDialogue(state.activeDialogue.conversation_id);
             }
-            await refreshAnalytics();
-        } else {
-            alert('Не удалось сохранить решение супервизора.');
         }
     } catch (e) {
         console.error('Failed to resolve appeal:', e);
     }
 };
 
-// ----------------- Dynamic Checklist Editor ----------------- //
+// ----------------- Checklist Configuration Editor ----------------- //
 
-window.openChecklistModal = function() {
-    if (!state.checklist) return;
+async function openChecklistModal() {
+    await loadChecklist();
     renderChecklistEditor();
     openModal('modalChecklist');
-};
+}
 
 function renderChecklistEditor() {
     const container = document.getElementById('checklistEditorContainer');
     const chk = state.checklist;
+    if (!chk || !chk.criteria) return;
 
     container.innerHTML = chk.criteria.map((c, idx) => `
-        <div class="p-2.5 bg-slate-50 rounded border border-[#cbd5e1] space-y-1.5" data-crit-index="${idx}">
-            <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 flex-1">
-                    <input type="text" class="crit-code w-12 py-0.5 px-1.5 border border-slate-300 rounded font-mono font-bold text-xs" value="${c.code}">
-                    <input type="text" class="crit-name flex-1 py-0.5 px-1.5 border border-slate-300 rounded font-bold text-xs" value="${c.name}">
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-[11px] text-slate-500">Вес:</label>
-                    <input type="number" class="crit-weight w-14 py-0.5 px-1.5 border border-slate-300 rounded font-mono text-xs" value="${c.weight}">
-                    <button onclick="window.removeCriterionRow(${idx})" class="text-rose-500 hover:text-rose-700 p-1" title="Удалить">
-                        <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
-                </div>
+        <div class="p-3 theme-surface-subtle rounded-xl border border-[var(--fb-border)] space-y-2" data-crit-index="${idx}">
+            <div class="flex items-center gap-2">
+                <input type="text" class="crit-code w-14 py-1 px-1.5 text-xs font-mono font-bold theme-input rounded-lg border border-[var(--fb-border)]" value="${c.code}">
+                <input type="text" class="crit-name flex-1 py-1 px-2 text-xs font-bold theme-input rounded-lg border border-[var(--fb-border)]" value="${c.name}">
+                <input type="number" step="1" class="crit-weight w-16 py-1 px-1.5 text-xs text-right font-mono theme-input rounded-lg border border-[var(--fb-border)]" value="${c.weight}" title="Вес критерия">
+                <span class="text-[11px] text-[var(--fb-text-muted)] font-mono">вес</span>
+                <button onclick="window.removeCriterionRow(${idx})" class="text-rose-400 hover:text-rose-500 p-1" title="Удалить">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
             </div>
-            <div class="grid grid-cols-2 gap-2">
-                <input type="text" class="crit-section py-0.5 px-1.5 border border-slate-300 rounded text-slate-600 text-xs" value="${c.section}">
-                <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-1.5 cursor-pointer text-slate-700 text-xs">
-                        <input type="checkbox" class="crit-allow-na" ${c.allow_na ? 'checked' : ''}>
-                        <span>Разрешен N/A</span>
-                    </label>
-                </div>
+            <div class="flex items-center gap-3 text-[11px] text-[var(--fb-text-secondary)]">
+                <span class="text-[var(--fb-text-muted)]">Раздел:</span>
+                <input type="text" class="crit-section flex-1 py-0.5 px-2 text-xs theme-input rounded-lg border border-[var(--fb-border)]" value="${c.section}">
+                <label class="flex items-center gap-1 cursor-pointer">
+                    <input type="checkbox" class="crit-allow-na rounded" ${c.allow_na ? 'checked' : ''}>
+                    <span>Разрешить N/A</span>
+                </label>
             </div>
-            <textarea class="crit-desc w-full py-0.5 px-1.5 border border-slate-300 rounded text-slate-600 text-xs" rows="2">${c.description}</textarea>
+            <textarea class="crit-desc w-full py-1 px-2 text-xs theme-input rounded-lg border border-[var(--fb-border)]" rows="2">${c.description}</textarea>
         </div>
     `).join('');
 }
@@ -812,7 +885,7 @@ window.addNewCriterionRow = function() {
         weight: 10,
         allow_na: true,
         max_scale: 1,
-        description: "Да — условие выполнено. Нет — условие не выполнено. N/A — не применимо.",
+        description: "Да: условие выполнено. Нет: условие не выполнено. N/A: не применимо.",
         scale_rubric: null
     });
     renderChecklistEditor();
