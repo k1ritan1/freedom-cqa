@@ -1,0 +1,100 @@
+/* Freedom Broker CQA - High-Density Enterprise Financial CRM Design System */
+:root {
+  --fb-pine: #0c3b2e;
+  --fb-pine-dark: #07241c;
+  --fb-green: #00965e;
+  --fb-green-hover: #007f50;
+  --fb-green-subtle: #f0fdf4;
+  --fb-slate: #0f172a;
+  --fb-slate-muted: #64748b;
+  --fb-border: #cbd5e1;
+  --fb-border-light: #e2e8f0;
+  --fb-surface: #ffffff;
+  --fb-bg: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--fb-bg);
+  color: var(--fb-slate);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Crisp compact scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Keyboard accessibility */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--fb-green);
+  outline-offset: 1px;
+}
+
+/* Quote highlight marker with smooth pulse decay */
+@keyframes quoteHighlight {
+  0% { background-color: #fef08a; }
+  60% { background-color: #fef9c3; }
+  100% { background-color: transparent; }
+}
+
+.highlight-pulse {
+  animation: quoteHighlight 2.5s ease-out forwards;
+  border-left: 3px solid #ca8a04 !important;
+}
+
+/* Dynamics 365 indicator tag */
+.d365-tag {
+  background-color: #0f2c59;
+  color: #ffffff;
+  border: 1px solid #1e3a8a;
+}
+
+/* Chess Icons - Clean, Authentic Rendering */
+.chess-icon-xs {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.chess-icon-sm {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.chess-icon-md {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.chess-icon-lg {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.65);
+}
