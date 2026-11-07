@@ -27,70 +27,56 @@
 </head>
 <body class="theme-surface h-screen flex flex-col overflow-hidden text-xs transition-colors duration-200">
 
-    <!-- Top Unified Navigation Bar -->
-    <header class="h-[52px] theme-header px-4 flex items-center justify-between border-b z-20 shrink-0">
-        <!-- Brand & Active Context -->
+    <!-- Top Unified Compact Navigation Bar (Height: 46px) -->
+    <header class="h-[46px] theme-header px-4 flex items-center justify-between border-b z-20 shrink-0">
+        <!-- Brand & Workspace Info -->
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-[#00bc58] text-white flex items-center justify-center font-bold text-sm tracking-tighter shadow-sm">
+            <div class="w-7 h-7 rounded-lg bg-[#00bc58] text-white flex items-center justify-center font-black text-xs tracking-tighter shadow-sm">
                 FB
             </div>
             <div class="flex items-center gap-2">
                 <span class="font-bold text-sm tracking-tight text-[var(--fb-text-primary)]">Freedom CQA</span>
-                <span class="text-[11px] text-[var(--fb-accent-green)] font-medium hidden sm:inline">| Контроль качества диалогов</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-semibold d365-tag hidden md:inline-flex items-center gap-1">
+                <span class="text-[11px] text-[var(--fb-accent-green)] font-medium hidden lg:inline">| Контроль качества диалогов</span>
+                <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold d365-tag hidden md:inline-flex items-center gap-1">
                     <i class="fa-solid fa-cube text-[9px]"></i> D365 Ready
                 </span>
-            </div>
-        </div>
-
-        <!-- Center: Current Dialogue Quick Info -->
-        <div id="headerDialogueContext" class="hidden md:flex items-center gap-2.5 theme-surface-subtle px-3 py-1.5 rounded-lg border border-[var(--fb-border)] text-xs">
-            <span class="text-[var(--fb-text-muted)]">Диалог:</span>
-            <span id="navActiveConvId" class="font-bold font-mono text-[var(--fb-accent-green)]">p1-ru-001</span>
-            <span id="navActiveChannel" class="text-[var(--fb-text-secondary)] text-[11px]">• Чат</span>
-            <span id="navActiveLang" class="px-1.5 py-0.5 rounded bg-[var(--fb-tag-bg)] text-[var(--fb-tag-text)] font-bold text-[10px]">RU</span>
-            <div id="navActiveAudioBadge" class="hidden ml-1 flex items-center gap-1 text-purple-400 font-medium text-[11px]">
-                <i class="fa-solid fa-phone text-[10px]"></i> Звонок
+                <span id="currentDatasetBadge" class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md theme-surface-subtle border border-[var(--fb-border)] text-[10px] font-mono text-[var(--fb-text-muted)]">
+                    Пул: <strong class="text-[var(--fb-text-primary)] font-bold">DEV</strong>
+                </span>
             </div>
         </div>
 
         <!-- Right Controls: Action Bar -->
         <div class="flex items-center gap-2">
             <!-- Theme Toggle Button -->
-            <button id="btnThemeToggle" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-primary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs" title="Сменить тему оформления">
+            <button id="btnThemeToggle" class="px-2.5 py-1 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-primary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs" title="Сменить тему оформления">
                 <i id="themeIcon" class="fa-solid fa-sun text-amber-400"></i>
                 <span id="themeLabel" class="hidden sm:inline font-medium">Светлая</span>
             </button>
 
             <!-- Supervisor Cabinet Button -->
-            <button id="btnSupervisorPending" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-amber-400 border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
+            <button id="btnSupervisorPending" class="px-2.5 py-1 theme-surface-subtle hover:opacity-90 text-amber-400 border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
                 <i class="fa-solid fa-user-check text-amber-400"></i>
                 <span class="hidden sm:inline">Супервизор</span>
                 <span id="pendingAppealsBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-600 text-white font-bold text-[10px]">0</span>
             </button>
 
             <!-- Checklist Settings -->
-            <button id="btnChecklistConfig" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-secondary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
+            <button id="btnChecklistConfig" class="px-2.5 py-1 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-secondary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
                 <i class="fa-solid fa-sliders text-[var(--fb-text-muted)]"></i>
                 <span class="hidden sm:inline">Чек-лист</span>
             </button>
 
             <!-- CRM Sync -->
-            <button id="btnSyncModal" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-secondary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs" title="Импорт из CRM">
+            <button id="btnSyncModal" class="px-2.5 py-1 theme-surface-subtle hover:opacity-90 text-[var(--fb-text-secondary)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs" title="Импорт из CRM">
                 <i class="fa-solid fa-cloud-arrow-down text-[var(--fb-text-muted)]"></i>
-                <span class="hidden sm:inline">Импорт</span>
+                <span class="hidden sm:inline">Импорт CRM</span>
             </button>
 
             <!-- Batch Evaluate -->
-            <button id="btnBatchEvaluate" class="px-2.5 py-1.5 theme-surface-subtle hover:opacity-90 text-[var(--fb-accent-green)] border border-[var(--fb-border)] text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-2xs">
-                <i class="fa-solid fa-play text-[var(--fb-accent-green)]"></i>
+            <button id="btnBatchEvaluate" class="px-3 py-1 theme-surface-subtle hover:opacity-90 text-[var(--fb-accent-green)] border border-[var(--fb-border)] text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-2xs">
+                <i class="fa-solid fa-play text-[var(--fb-accent-green)] text-[10px]"></i>
                 <span class="hidden sm:inline">Оценить все</span>
-            </button>
-
-            <!-- Evaluate Single Active Dialogue -->
-            <button id="btnEvaluateSingle" class="px-3 py-1.5 bg-[#00bc58] hover:bg-[#00a84e] text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span>Оценить (AI)</span>
             </button>
         </div>
     </header>
@@ -99,7 +85,7 @@
     <div id="batchProgressBar" class="hidden bg-emerald-950/70 border-b border-emerald-700/60 px-4 py-1.5 text-xs flex items-center justify-between text-emerald-200 shrink-0">
         <div class="flex items-center gap-2">
             <i class="fa-solid fa-spinner fa-spin text-emerald-400"></i>
-            <span>Пакетная оценка DEV набора: <strong id="batchProgressText">0 / 0</strong></span>
+            <span>Пакетная оценка набора: <strong id="batchProgressText">0 / 0</strong></span>
             <span class="text-slate-400 font-mono text-[11px]" id="batchCurrentId"></span>
         </div>
         <div class="w-48 bg-emerald-900 rounded-full h-1.5 overflow-hidden">
@@ -107,31 +93,31 @@
         </div>
     </div>
 
-    <!-- Main Workspace Splitter -->
+    <!-- Main 3-Column Persistent Side-by-Side Workspace -->
     <div class="flex-1 flex overflow-hidden">
 
-        <!-- Left Column: Compact High-Density Dialogue Explorer (Width: 340px) -->
-        <aside class="w-80 md:w-[340px] theme-sidebar border-r border-[var(--fb-border)] flex flex-col shrink-0">
+        <!-- Column 1: Dialogue Queue (~22%, min-w-[270px], max-w-[320px]) -->
+        <aside class="w-72 md:w-[280px] lg:w-[310px] theme-sidebar border-r border-[var(--fb-border)] flex flex-col shrink-0">
             <!-- Search & Filters -->
             <div class="p-2.5 border-b border-[var(--fb-border)] space-y-2 theme-surface-subtle">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-[var(--fb-text-muted)] text-xs"></i>
-                    <input type="text" id="searchInput" placeholder="Поиск по ID или теме диалога..." 
+                    <input type="text" id="searchInput" placeholder="Поиск по ID или фразе..." 
                         class="w-full pl-8 pr-3 py-1.5 text-xs theme-input rounded-lg border border-[var(--fb-border)] transition">
                 </div>
                 <div class="grid grid-cols-3 gap-1.5">
-                    <select id="filterLanguage" class="text-[11px] py-1 px-2 theme-input rounded-lg border border-[var(--fb-border)]">
+                    <select id="filterLanguage" class="text-[11px] py-1 px-1.5 theme-input rounded-lg border border-[var(--fb-border)]">
                         <option value="">Язык: Все</option>
                         <option value="RU">RU</option>
                         <option value="KZ">KZ</option>
                         <option value="EN">EN</option>
                     </select>
-                    <select id="filterChannel" class="text-[11px] py-1 px-2 theme-input rounded-lg border border-[var(--fb-border)]">
+                    <select id="filterChannel" class="text-[11px] py-1 px-1.5 theme-input rounded-lg border border-[var(--fb-border)]">
                         <option value="">Канал: Все</option>
                         <option value="agent chat">Чат</option>
                         <option value="voice call">Звонок</option>
                     </select>
-                    <select id="filterStatus" class="text-[11px] py-1 px-2 theme-input rounded-lg border border-[var(--fb-border)]">
+                    <select id="filterStatus" class="text-[11px] py-1 px-1.5 theme-input rounded-lg border border-[var(--fb-border)]">
                         <option value="">Статус: Все</option>
                         <option value="evaluated">Оценен</option>
                         <option value="pending">Ожидает</option>
@@ -148,150 +134,178 @@
                     <p>Загрузка диалогов...</p>
                 </div>
             </div>
+
+            <!-- Keyboard shortcut hint footer in sidebar -->
+            <div class="p-2 border-t border-[var(--fb-border)] theme-surface-subtle flex items-center justify-between text-[10px] text-[var(--fb-text-muted)] shrink-0">
+                <div class="flex items-center gap-1">
+                    <span class="kbd-tag">J</span> / <span class="kbd-tag">K</span> 
+                    <span>навигация</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="kbd-tag">Space</span> 
+                    <span>к нарушению</span>
+                </div>
+            </div>
         </aside>
 
-        <!-- Right Main Inspector Column -->
-        <main class="flex-1 flex flex-col theme-surface overflow-hidden">
+        <!-- Column 2: Persistent Transcript & Chat Player (~43%, flex-1 min-w-[360px]) -->
+        <section class="flex-1 flex flex-col theme-surface border-r border-[var(--fb-border)] overflow-hidden">
             
-            <!-- Compact Inspector Header Bar -->
-            <div class="theme-surface border-b border-[var(--fb-border)] px-5 py-2.5 flex items-center justify-between shadow-2xs shrink-0">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div id="activeChannelIcon" class="w-8 h-8 rounded-lg bg-[var(--fb-accent-green-subtle)] text-[var(--fb-accent-green)] flex items-center justify-center text-xs shrink-0 border border-[var(--fb-border)]">
+            <!-- Transcript Column Header Bar -->
+            <div class="theme-surface border-b border-[var(--fb-border)] px-4 py-2 flex items-center justify-between shrink-0 shadow-2xs">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div id="activeChannelIcon" class="w-7 h-7 rounded-lg bg-[var(--fb-accent-green-subtle)] text-[var(--fb-accent-green)] flex items-center justify-center text-xs shrink-0 border border-[var(--fb-border)]">
                         <i class="fa-regular fa-comments"></i>
                     </div>
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                            <h2 id="activeConversationId" class="text-sm font-bold text-[var(--fb-text-primary)] tracking-tight font-mono">p1-ru-001</h2>
-                            <span id="activeLangBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--fb-tag-bg)] text-[var(--fb-tag-text)] border border-[var(--fb-border)]">RU</span>
-                            <span id="activeChannelBadge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--fb-tag-bg)] text-[var(--fb-text-secondary)] border border-[var(--fb-border)]">Чат</span>
-                            <span id="severeAlertBadge" class="hidden px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white flex items-center gap-1 shadow-xs">
-                                <i class="fa-solid fa-triangle-exclamation"></i> ГРУБОЕ НАРУШЕНИЕ
+                            <h2 id="activeConversationId" class="text-xs font-bold text-[var(--fb-text-primary)] font-mono tracking-tight">p1-ru-001</h2>
+                            <span id="activeLangBadge" class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[var(--fb-tag-bg)] text-[var(--fb-tag-text)] border border-[var(--fb-border)]">RU</span>
+                            <span id="activeChannelBadge" class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-[var(--fb-tag-bg)] text-[var(--fb-text-secondary)] border border-[var(--fb-border)]">Чат</span>
+                            <span id="severeAlertBadge" class="hidden px-2 py-0.2 rounded text-[9px] font-bold bg-rose-600 text-white flex items-center gap-1 shadow-xs">
+                                <i class="fa-solid fa-triangle-exclamation"></i> НАРУШЕНИЕ
                             </span>
-                            <!-- Voice Call audio button if call -->
-                            <div id="voiceCallControl" class="hidden inline-flex items-center gap-1">
-                                <a id="btnExternalAudio" href="#" target="_blank" rel="noopener noreferrer" 
-                                    class="px-2 py-0.5 bg-purple-900/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/50 rounded-lg text-[11px] font-medium flex items-center gap-1 transition">
-                                    <i class="fa-solid fa-play text-[9px]"></i>
-                                    <span>Запись Power Automate</span>
-                                </a>
-                            </div>
                         </div>
-                        <div class="text-[11px] text-[var(--fb-text-muted)] flex items-center gap-2 mt-0.5">
+                        <div class="text-[10px] text-[var(--fb-text-muted)] mt-0.5">
                             <span id="activeMsgCount">Сообщений: 0</span>
-                            <span id="activeEvalMeta" class="hidden text-[var(--fb-text-muted)]"></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right: Overall Chess Rating Badge & Tab Switcher -->
-                <div class="flex items-center gap-4 shrink-0">
-                    <!-- Overall Score Chess Review Pill -->
+                <!-- Call Audio Scrubber / External Audio Player -->
+                <div id="voiceCallControl" class="hidden flex items-center gap-2">
+                    <a id="btnExternalAudio" href="#" target="_blank" rel="noopener noreferrer" 
+                        class="px-2.5 py-1 bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/50 rounded-lg text-[10px] font-medium flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-play text-[9px]"></i>
+                        <span>Аудиозапись D365</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Messages Thread Scrollable Container -->
+            <div id="transcriptScrollContainer" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div class="max-w-2xl mx-auto space-y-2.5" id="transcriptMessagesList">
+                    <!-- Dynamically filled with chat bubbles -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Column 3: Quality Checklist & Audit Review (~35%, min-w-[380px], max-w-[460px] shrink-0) -->
+        <section class="w-96 md:w-[400px] lg:w-[440px] flex flex-col theme-surface overflow-hidden shrink-0">
+            
+            <!-- Checklist Column Header: Score & Metadata -->
+            <div class="theme-surface border-b border-[var(--fb-border)] p-3 space-y-2.5 shrink-0 shadow-2xs">
+                <!-- Top Row: Score Pill + AI Evaluate Button -->
+                <div class="flex items-center justify-between gap-3">
                     <div id="scoreHeaderPill" class="flex items-center gap-2.5 theme-surface-subtle border border-[var(--fb-border)] px-3 py-1.5 rounded-lg shadow-2xs">
                         <img id="headerChessIcon" src="/assets/rating icons/brilliant.png" alt="Chess Badge" class="chess-icon-md">
                         <div>
                             <div class="flex items-center gap-1.5 leading-none">
-                                <span id="headerChessLabel" class="text-[11px] font-bold text-[var(--fb-text-primary)]">Блестящий диалог</span>
+                                <span id="headerChessLabel" class="text-[11px] font-bold text-[var(--fb-text-primary)]">Блестяще</span>
                             </div>
                             <div class="text-sm font-black text-[var(--fb-text-primary)] font-mono leading-tight mt-0.5">
-                                <span id="activeTotalScore">100.00</span> <span class="text-[10px] font-normal text-[var(--fb-text-muted)]">/ 100</span>
+                                <span id="activeTotalScore">100</span> <span class="text-[10px] font-normal text-[var(--fb-text-muted)]">/ 100 б</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Clean Inline Tabstrip -->
-                    <div class="flex theme-surface-subtle p-0.5 rounded-lg border border-[var(--fb-border)] text-xs">
-                        <button onclick="window.switchTab('score')" id="tabBtnScore" 
-                            class="px-3 py-1 font-semibold rounded-md bg-[var(--fb-surface)] text-[var(--fb-text-primary)] shadow-2xs transition">
-                            Критерии CQA
-                        </button>
-                        <button onclick="window.switchTab('transcript')" id="tabBtnTranscript" 
-                            class="px-3 py-1 font-medium rounded-md text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] transition">
-                            Транскрипт
-                        </button>
-                        <button onclick="window.switchTab('appeals')" id="tabBtnAppeals" 
-                            class="px-3 py-1 font-medium rounded-md text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] transition flex items-center gap-1">
-                            <span>Апелляции</span>
-                            <span id="tabAppealsBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[9px] font-bold">0</span>
-                        </button>
+                    <button id="btnEvaluateSingle" class="px-3 py-1.5 bg-[#00bc58] hover:bg-[#00a84e] text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+                        <span>Оценить (AI)</span>
+                    </button>
+                </div>
+
+                <!-- Clean Separated Metadata Bar (No cramming!) -->
+                <div id="activeEvalMetaContainer" class="flex items-center gap-1.5 flex-wrap text-[10px] text-[var(--fb-text-muted)] font-mono">
+                    <span id="evalMetaModel" class="px-2 py-0.5 rounded-md theme-surface-subtle border border-[var(--fb-border)]">Модель: Groq</span>
+                    <span id="evalMetaLatency" class="px-2 py-0.5 rounded-md theme-surface-subtle border border-[var(--fb-border)]">Задержка: 0мс</span>
+                    <span id="evalMetaCost" class="px-2 py-0.5 rounded-md theme-surface-subtle border border-[var(--fb-border)]">Расход: $0.0000</span>
+                    <button onclick="window.switchChecklistView('appeals')" id="btnToggleAppealsTab" 
+                        class="px-2 py-0.5 rounded-md theme-surface-subtle border border-[var(--fb-border)] text-amber-400 hover:text-amber-300 transition flex items-center gap-1 ml-auto">
+                        <i class="fa-solid fa-scale-balanced text-[9px]"></i>
+                        <span>Апелляции</span>
+                        <span id="tabAppealsBadge" class="hidden px-1 py-0.2 rounded-full bg-amber-600 text-white font-bold text-[9px]">0</span>
+                    </button>
+                </div>
+
+                <!-- Compact Segmented Category Score Bar -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[10px] font-bold text-[var(--fb-text-muted)] uppercase tracking-tight">
+                        <span>Категории чек-листа</span>
+                        <span id="categoryScoresSummaryText" class="font-mono text-[var(--fb-text-secondary)]">100 / 100 б</span>
+                    </div>
+                    <div id="sectionScoresContainer" class="segmented-category-bar">
+                        <!-- Filled with horizontal segmented bars -->
                     </div>
                 </div>
             </div>
 
-            <!-- Tab Content 1: Checklist Evaluation (Monolithic High-Density CRM) -->
-            <div id="tabContentScore" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- Checklist Body: Scrollable Criteria / Appeals -->
+            <div id="checklistScrollContainer" class="flex-1 overflow-y-auto p-3 space-y-3">
                 
-                <!-- Notice when no evaluation yet -->
+                <!-- Notice when dialogue is not evaluated yet -->
                 <div id="noEvaluationNotice" class="hidden p-8 text-center theme-surface rounded-xl border border-[var(--fb-border)]">
                     <i class="fa-solid fa-clipboard-question text-3xl text-[var(--fb-text-muted)] mb-2"></i>
                     <h3 class="text-xs font-bold text-[var(--fb-text-primary)] mb-1">Диалог еще не оценен</h3>
-                    <p class="text-[11px] text-[var(--fb-text-muted)] mb-3 max-w-sm mx-auto">
-                        Нажмите кнопку «Оценить (AI)» в шапке, чтобы получить детализированную оценку качества.
+                    <p class="text-[11px] text-[var(--fb-text-muted)] mb-3 max-w-xs mx-auto">
+                        Нажмите кнопку «Оценить (AI)» выше для запуска автоматического анализа по 8 критериям.
                     </p>
                 </div>
 
-                <!-- Evaluation Container -->
+                <!-- Main Evaluation Content -->
                 <div id="evaluationCard" class="space-y-3">
-                    
-                    <!-- Section Breakdown Bar (Compact) -->
-                    <div id="sectionScoresContainer" class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                        <!-- Dynamically filled with section pills -->
-                    </div>
 
-                    <!-- Monolithic Criteria Cards Container -->
+                    <!-- Dense 8 Criteria Container -->
                     <div class="theme-surface rounded-xl border border-[var(--fb-border)] overflow-hidden shadow-2xs divide-y divide-[var(--fb-border)]">
-                        <div class="px-4 py-2.5 theme-surface-subtle flex items-center justify-between text-[11px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">
-                            <span>Детализация по 8 критериям чек-листа Freedom Broker</span>
-                            <span class="text-[var(--fb-text-muted)] font-normal lowercase">нажмите на цитату для перехода к фразе</span>
+                        <div class="px-3 py-2 theme-surface-subtle flex items-center justify-between text-[10px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">
+                            <span>8 критериев Freedom Broker</span>
+                            <button id="btnToggleNaItems" onclick="window.toggleNaVisibility()" 
+                                class="text-[10px] text-[var(--fb-accent-green)] font-semibold hover:underline">
+                                <span id="naToggleText">Скрыть N/A</span>
+                            </button>
                         </div>
                         <div id="criteriaMonolithicContainer" class="divide-y divide-[var(--fb-border-light)]">
-                            <!-- Filled dynamically with monolithic rows -->
+                            <!-- Filled dynamically with dense criteria rows -->
                         </div>
                     </div>
 
                     <!-- AI Auditor Feedback Block -->
-                    <div class="theme-surface rounded-xl border border-[var(--fb-border)] p-3.5 shadow-2xs">
-                        <div class="flex items-center gap-2 mb-1.5 text-[11px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">
+                    <div class="theme-surface rounded-xl border border-[var(--fb-border)] p-3 shadow-2xs">
+                        <div class="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">
                             <i class="fa-solid fa-comment-medical text-[#00bc58]"></i>
                             <span>Резюме аудитора качества</span>
                         </div>
-                        <p id="evalSummaryFeedback" class="text-[11px] text-[var(--fb-text-secondary)] leading-relaxed italic theme-surface-subtle p-3 rounded-lg border border-[var(--fb-border-light)]">
+                        <p id="evalSummaryFeedback" class="text-[11px] text-[var(--fb-text-secondary)] leading-relaxed italic theme-surface-subtle p-2.5 rounded-lg border border-[var(--fb-border-light)]">
                             Оценка выполнена успешно.
                         </p>
                     </div>
 
-                </div>
-            </div>
-
-            <!-- Tab Content 2: Transcript Viewer -->
-            <div id="tabContentTranscript" class="hidden flex-1 overflow-y-auto p-4">
-                <div class="max-w-3xl mx-auto space-y-2.5" id="transcriptMessagesList">
-                    <!-- Dynamically filled with chat bubbles -->
-                </div>
-            </div>
-
-            <!-- Tab Content 3: Appeals & Audit Log -->
-            <div id="tabContentAppeals" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
-                <div class="theme-surface rounded-xl border border-[var(--fb-border)] p-4 shadow-2xs">
-                    <div class="flex items-center justify-between mb-3 border-b border-[var(--fb-border-light)] pb-2">
-                        <h3 class="text-xs font-bold text-[var(--fb-text-primary)] uppercase tracking-tight">Апелляции по текущему диалогу</h3>
-                        <button onclick="window.openAppealModal(null)" class="px-2.5 py-1 bg-[#00bc58] hover:bg-[#00a84e] text-white text-xs font-medium rounded-lg transition flex items-center gap-1">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Подать апелляцию</span>
-                        </button>
+                    <!-- Active Appeals Drawer / List on Current Dialogue -->
+                    <div id="dialogueAppealsSection" class="hidden theme-surface rounded-xl border border-[var(--fb-border)] p-3 shadow-2xs space-y-2">
+                        <div class="flex items-center justify-between border-b border-[var(--fb-border-light)] pb-1.5">
+                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 uppercase tracking-tight">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                                <span>Апелляции по диалогу</span>
+                            </div>
+                            <button onclick="window.openAppealModal(null)" class="px-2 py-0.5 bg-[#00bc58] hover:bg-[#00a84e] text-white text-[10px] font-medium rounded-md transition flex items-center gap-1">
+                                <i class="fa-solid fa-plus text-[8px]"></i> Подать
+                            </button>
+                        </div>
+                        <div id="dialogueAppealsList" class="space-y-2">
+                            <!-- Filled dynamically -->
+                        </div>
                     </div>
-                    
-                    <div id="dialogueAppealsList" class="space-y-2">
-                        <!-- Filled dynamically -->
-                    </div>
+
                 </div>
             </div>
 
-        </main>
+        </section>
+
     </div>
 
-    <!-- Bottom Status Bar -->
-    <footer class="h-[28px] theme-footer px-4 flex items-center justify-between text-[11px] border-t shrink-0 font-mono">
-        <div class="flex items-center gap-4">
+    <!-- Bottom Status Tray (Height: 26px) -->
+    <footer class="h-[26px] theme-footer px-4 flex items-center justify-between text-[11px] border-t shrink-0 font-mono">
+        <div class="flex items-center gap-3">
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-[#00bc58]"></span>
                 <span class="text-[var(--fb-text-primary)] font-semibold">AI: Groq (openai/gpt-oss-120b)</span>
@@ -311,7 +325,7 @@
             <span class="text-[var(--fb-text-muted)]">|</span>
             <div>Нарушений: <span id="statViolations" class="text-rose-400 font-semibold">0</span></div>
             <span class="text-[var(--fb-text-muted)]">|</span>
-            <div class="text-[var(--fb-accent-green)] font-semibold">Dynamics 365 Adapter: Ready</div>
+            <div class="text-[var(--fb-accent-green)] font-semibold hidden md:inline">Dynamics 365 Adapter: Ready</div>
         </div>
     </footer>
 

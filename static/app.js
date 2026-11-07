@@ -1,7 +1,8 @@
 /**
  * Freedom Broker CQA - High-Density Enterprise Financial CRM
  * Supports full Dark (default) and Light themes, authentic Chess Ratings,
- * high readability criteria cards, and seamless transcript navigation.
+ * 3-Column Persistent Side-by-Side Workspace, clean rounded scores (no fractional clutter),
+ * and keyboard-driven audit navigation.
  */
 
 const CHESS_ICONS = {
@@ -21,8 +22,9 @@ let state = {
     dialogues: [],
     activeDialogue: null,
     checklist: null,
-    activeTab: 'score',
     selectedGroupId: 'DEV',
+    showNaCriteria: false,
+    showAppealsTab: false,
     batchPollingTimer: null
 };
 
@@ -33,10 +35,26 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
     initTheme();
     setupEventListeners();
+    setupKeyboardNavigation();
     await loadChecklist();
     await loadDialogues();
     await refreshAnalytics();
     checkBatchProgress();
+}
+
+// ----------------- Score Formatting Helper ----------------- //
+
+/**
+ * Eliminates fractional visual noise.
+ * Rounds whole numbers to integers (100, 20, 0) and fractional numbers to 1 decimal place (92.3, 76.5, 30.8).
+ */
+function formatScore(val) {
+    if (val === null || val === undefined || isNaN(val)) return '0';
+    const num = parseFloat(val);
+    if (Math.abs(num - Math.round(num)) < 0.05) {
+        return Math.round(num).toString();
+    }
+    return num.toFixed(1);
 }
 
 // ----------------- Theme Switcher ----------------- //
@@ -80,6 +98,8 @@ function toggleTheme() {
     }
 }
 
+// ----------------- Event Listeners & Keyboard ----------------- //
+
 function setupEventListeners() {
     document.getElementById('searchInput').addEventListener('input', renderDialogueList);
     document.getElementById('filterLanguage').addEventListener('change', renderDialogueList);
@@ -91,6 +111,57 @@ function setupEventListeners() {
     document.getElementById('btnSupervisorPending').addEventListener('click', openSupervisorModal);
     document.getElementById('btnBatchEvaluate').addEventListener('click', triggerBatchEvaluation);
     document.getElementById('btnEvaluateSingle').addEventListener('click', triggerSingleEvaluation);
+}
+
+function setupKeyboardNavigation() {
+    document.addEventListener('keydown', (e) => {
+        // Ignore if user is typing in form controls
+        const tag = (e.target.tagName || '').toUpperCase();
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+        if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            navigateDialogueList(1);
+        } else if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            navigateDialogueList(-1);
+        } else if (e.code === 'Space') {
+            e.preventDefault();
+            jumpToFirstViolationOrQuote();
+        }
+    });
+}
+
+function navigateDialogueList(direction) {
+    if (!state.dialogues || state.dialogues.length === 0) return;
+    const currentId = state.activeDialogue ? state.activeDialogue.conversation_id : null;
+    const filtered = getFilteredDialogues();
+    if (filtered.length === 0) return;
+
+    let currentIndex = filtered.findIndex(d => d.conversation_id === currentId);
+    let nextIndex = currentIndex + direction;
+    if (nextIndex < 0) nextIndex = 0;
+    if (nextIndex >= filtered.length) nextIndex = filtered.length - 1;
+
+    loadDialogue(filtered[nextIndex].conversation_id);
+}
+
+function jumpToFirstViolationOrQuote() {
+    const dlg = state.activeDialogue;
+    if (!dlg || !dlg.evaluation) return;
+
+    // Look for first violation quote
+    const crs = Object.values(dlg.evaluation.criteria_results || {});
+    const viol = crs.find(c => (c.final_score === 0 || c.chess_badge === 'Blunder' || c.status === 'NO') && c.quote);
+    if (viol) {
+        window.jumpToQuote(viol.quote_timestamp, viol.quote);
+        return;
+    }
+    // Otherwise jump to first quote
+    const firstWithQuote = crs.find(c => c.quote && c.quote.trim().length > 0);
+    if (firstWithQuote) {
+        window.jumpToQuote(firstWithQuote.quote_timestamp, firstWithQuote.quote);
+    }
 }
 
 // ----------------- API Calls ----------------- //
@@ -126,7 +197,7 @@ async function refreshAnalytics() {
         
         document.getElementById('statTotal').innerText = data.total_dialogues;
         document.getElementById('statEvaluated').innerText = data.evaluated_count;
-        document.getElementById('statAvgScore').innerText = data.avg_score.toFixed(1);
+        document.getElementById('statAvgScore').innerText = formatScore(data.avg_score);
         document.getElementById('statViolations').innerText = data.severe_violations_count;
         
         document.getElementById('totalCostHeader').innerText = `$${data.total_cost_usd.toFixed(4)}`;
@@ -156,20 +227,15 @@ async function loadDialogue(convId) {
     }
 }
 
-// ----------------- Rendering ----------------- //
+// ----------------- Filter Helper ----------------- //
 
-function getChessIconInfo(key) {
-    return CHESS_ICONS[key] || null;
-}
-
-function renderDialogueList() {
-    const container = document.getElementById('dialogueListContainer');
-    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+function getFilteredDialogues() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
     const lang = document.getElementById('filterLanguage').value;
     const channel = document.getElementById('filterChannel').value;
     const status = document.getElementById('filterStatus').value;
 
-    const filtered = state.dialogues.filter(d => {
+    return state.dialogues.filter(d => {
         if (search) {
             const idMatch = d.conversation_id.toLowerCase().includes(search);
             const snippetMatch = (d.client_snippet || '').toLowerCase().includes(search);
@@ -183,6 +249,17 @@ function renderDialogueList() {
         if (status === 'appeals' && d.appeals_count <= 0) return false;
         return true;
     });
+}
+
+function getChessIconInfo(key) {
+    return CHESS_ICONS[key] || null;
+}
+
+// ----------------- Column 1: Dialogue List ----------------- //
+
+function renderDialogueList() {
+    const container = document.getElementById('dialogueListContainer');
+    const filtered = getFilteredDialogues();
 
     if (filtered.length === 0) {
         container.innerHTML = `
@@ -205,6 +282,7 @@ function renderDialogueList() {
             const badgeKey = d.severe_violation ? 'Blunder' : (d.chess_badge || 'Book');
             const iconInfo = getChessIconInfo(badgeKey);
             const score = d.total_score;
+            const scoreFormatted = formatScore(score);
 
             // Tier-based color coding
             let tierClass = 'text-emerald-400 bg-emerald-950/40 border-emerald-600/40';
@@ -220,11 +298,11 @@ function renderDialogueList() {
                 scoreBadge = `
                     <div class="flex items-center gap-1 shrink-0 font-mono font-bold text-xs ${tierClass} px-1.5 py-0.5 rounded-md border" title="${iconInfo.label}">
                         <img src="/assets/rating icons/${iconInfo.file}" alt="${badgeKey}" class="chess-icon-xs">
-                        <span>${score.toFixed(1)}</span>
+                        <span>${scoreFormatted}</span>
                     </div>
                 `;
             } else {
-                scoreBadge = `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold ${tierClass} border">${score.toFixed(1)}</span>`;
+                scoreBadge = `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold ${tierClass} border">${scoreFormatted}</span>`;
             }
         } else {
             scoreBadge = `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-medium theme-surface-subtle text-[var(--fb-text-muted)] border border-[var(--fb-border)]">Ожидает</span>`;
@@ -243,7 +321,7 @@ function renderDialogueList() {
             : (d.channel === 'voice call' ? 'Аудиозапись входящего звонка' : 'Диалог без текста');
 
         return `
-            <div onclick="window.loadDialogue('${d.conversation_id}')" class="px-3 py-2.5 cursor-pointer transition ${activeClass}">
+            <div onclick="window.loadDialogue('${d.conversation_id}')" class="px-3 py-2 cursor-pointer transition ${activeClass}">
                 <div class="flex items-center justify-between gap-1.5">
                     <div class="flex items-center gap-1.5 min-w-0">
                         <span class="w-4 h-4 rounded bg-[var(--fb-surface-subtle)] flex items-center justify-center shrink-0">
@@ -257,7 +335,7 @@ function renderDialogueList() {
                         ${scoreBadge}
                     </div>
                 </div>
-                <div class="text-[11px] text-[var(--fb-text-muted)] truncate mt-1 pl-5">
+                <div class="text-[11px] text-[var(--fb-text-muted)] truncate mt-0.5 pl-5">
                     ${snippetText}
                 </div>
             </div>
@@ -265,36 +343,31 @@ function renderDialogueList() {
     }).join('');
 }
 
+// ----------------- Columns 2 & 3: Persistent Side-by-Side ----------------- //
+
 function renderDialogueInspector() {
     const dlg = state.activeDialogue;
     if (!dlg) return;
 
-    // Header context
+    // Header context in Column 2
     document.getElementById('activeConversationId').innerText = dlg.conversation_id;
-    document.getElementById('navActiveConvId').innerText = dlg.conversation_id;
-    
     document.getElementById('activeLangBadge').innerText = dlg.language;
-    document.getElementById('navActiveLang').innerText = dlg.language;
 
     const chName = dlg.channel === 'voice call' ? 'Звонок' : 'Чат';
     document.getElementById('activeChannelBadge').innerText = chName;
-    document.getElementById('navActiveChannel').innerText = `• ${chName}`;
 
     const chIcon = document.getElementById('activeChannelIcon');
-    const navAudioBadge = document.getElementById('navActiveAudioBadge');
     if (dlg.channel === 'voice call') {
         chIcon.innerHTML = '<i class="fa-solid fa-phone text-purple-400"></i>';
-        chIcon.className = 'w-8 h-8 rounded-lg bg-purple-950/40 text-purple-400 flex items-center justify-center text-xs shrink-0 border border-purple-500/40';
-        navAudioBadge.classList.remove('hidden');
+        chIcon.className = 'w-7 h-7 rounded-lg bg-purple-950/40 text-purple-400 flex items-center justify-center text-xs shrink-0 border border-purple-500/40';
     } else {
         chIcon.innerHTML = '<i class="fa-regular fa-comments text-[var(--fb-accent-green)]"></i>';
-        chIcon.className = 'w-8 h-8 rounded-lg bg-[var(--fb-accent-green-subtle)] text-[var(--fb-accent-green)] flex items-center justify-center text-xs shrink-0 border border-[var(--fb-border)]';
-        navAudioBadge.classList.add('hidden');
+        chIcon.className = 'w-7 h-7 rounded-lg bg-[var(--fb-accent-green-subtle)] text-[var(--fb-accent-green)] flex items-center justify-center text-xs shrink-0 border border-[var(--fb-border)]';
     }
 
-    document.getElementById('activeMsgCount').innerText = `Сообщений: ${dlg.transcript.length}`;
+    document.getElementById('activeMsgCount').innerText = `${dlg.transcript ? dlg.transcript.length : 0} сообщений`;
 
-    // Audio Link
+    // Voice Call Audio Button
     const voiceControl = document.getElementById('voiceCallControl');
     if (dlg.audio_url) {
         voiceControl.classList.remove('hidden');
@@ -303,19 +376,18 @@ function renderDialogueInspector() {
         voiceControl.classList.add('hidden');
     }
 
-    // Evaluation data
+    // Evaluation data in Column 3
     const evalData = dlg.evaluation;
     const scorePill = document.getElementById('scoreHeaderPill');
     const severeAlert = document.getElementById('severeAlertBadge');
     const noEvalNotice = document.getElementById('noEvaluationNotice');
     const evalCard = document.getElementById('evaluationCard');
-    const metaSpan = document.getElementById('activeEvalMeta');
 
     if (evalData) {
         scorePill.classList.remove('hidden');
-        document.getElementById('activeTotalScore').innerText = evalData.total_score.toFixed(2);
+        document.getElementById('activeTotalScore').innerText = formatScore(evalData.total_score);
         
-        // Chess Rating Badge in Header
+        // Chess Rating Badge in Column 3 Header
         const badgeKey = evalData.severe_violation ? 'Blunder' : (evalData.chess_badge || 'Book');
         const iconInfo = getChessIconInfo(badgeKey);
         const headerIcon = document.getElementById('headerChessIcon');
@@ -336,19 +408,23 @@ function renderDialogueInspector() {
             severeAlert.classList.add('hidden');
         }
 
-        metaSpan.classList.remove('hidden');
-        metaSpan.innerText = `· Задержка: ${evalData.latency_ms}мс · Модель: ${evalData.model_used || 'Groq'}`;
+        // Clean Separated Metadata Bar (No cramming!)
+        const latSec = (evalData.latency_ms / 1000).toFixed(1);
+        document.getElementById('evalMetaModel').innerText = `Модель: ${evalData.model_used || 'Groq'}`;
+        document.getElementById('evalMetaLatency').innerText = `Задержка: ${latSec}с`;
+        document.getElementById('evalMetaCost').innerText = `Расход: $${(evalData.cost_usd || 0).toFixed(4)}`;
 
         noEvalNotice.classList.add('hidden');
         evalCard.classList.remove('hidden');
 
-        renderSectionScores(evalData.section_scores);
+        renderSegmentedCategoryScores(evalData.section_scores, evalData.total_score);
         renderMonolithicCriteria(evalData.criteria_results);
         document.getElementById('evalSummaryFeedback').innerText = evalData.summary_feedback || 'Оценка завершена в штатном режиме.';
     } else {
         scorePill.classList.add('hidden');
         severeAlert.classList.add('hidden');
-        metaSpan.classList.add('hidden');
+        document.getElementById('evalMetaLatency').innerText = 'Задержка: —';
+        document.getElementById('evalMetaCost').innerText = 'Расход: —';
         noEvalNotice.classList.remove('hidden');
         evalCard.classList.add('hidden');
     }
@@ -357,41 +433,49 @@ function renderDialogueInspector() {
     renderAppealsList();
 }
 
-function renderSectionScores(sections) {
+// ----------------- Segmented Category Score Bar ----------------- //
+
+function renderSegmentedCategoryScores(sections, totalScore) {
     const container = document.getElementById('sectionScoresContainer');
+    const summaryText = document.getElementById('categoryScoresSummaryText');
     if (!sections || Object.keys(sections).length === 0) {
         container.innerHTML = '';
+        if (summaryText) summaryText.innerText = '';
         return;
     }
 
-    const sectionLabels = {
-        'НАЧАЛО И ПОНИМАНИЕ ЗАПРОСА': '1. Начало и запрос',
-        'БЕЗОПАСНОСТЬ И РЕШЕНИЕ': '2. Безопасность и решение',
-        'ВЕДЕНИЕ И ЗАВЕРШЕНИЕ ДИАЛОГА': '3. Ведение и завершение'
-    };
+    if (summaryText) {
+        summaryText.innerText = `${formatScore(totalScore)} / 100 б`;
+    }
 
+    const sectionColors = [
+        'bg-emerald-500', // Начало и запрос
+        'bg-teal-500',    // Безопасность и решение
+        'bg-blue-500'     // Ведение и завершение
+    ];
+
+    let idx = 0;
     container.innerHTML = Object.entries(sections).map(([name, val]) => {
-        const shortName = sectionLabels[name] || name;
-        const pct = val.max > 0 ? Math.round((val.earned / val.max) * 100) : 0;
-
-        // Color coding for section progress
-        let barColor = 'bg-[#00bc58]';
-        if (pct < 50) barColor = 'bg-rose-500';
-        else if (pct < 80) barColor = 'bg-amber-500';
+        const earned = val.earned || 0;
+        const max = val.max || 1;
+        const pct = Math.min(Math.round((earned / 100) * 100), 100);
+        const color = sectionColors[idx % sectionColors.length];
+        idx++;
 
         return `
-            <div class="theme-surface p-3 rounded-xl border border-[var(--fb-border)] shadow-2xs">
-                <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[11px] font-bold text-[var(--fb-text-primary)] uppercase tracking-tight truncate">${shortName}</span>
-                    <span class="text-xs font-mono font-bold text-[var(--fb-text-primary)]">${val.earned} / ${val.max} б</span>
-                </div>
-                <div class="w-full bg-[var(--fb-surface-subtle)] rounded-full h-1.5 overflow-hidden">
-                    <div class="${barColor} h-1.5 transition-all duration-300" style="width: ${pct}%"></div>
-                </div>
-            </div>
+            <div class="segmented-segment ${color}" style="width: ${pct}%" title="${name}: ${formatScore(earned)} / ${formatScore(max)} б"></div>
         `;
     }).join('');
 }
+
+// ----------------- 8 Criteria Checklist Rendering ----------------- //
+
+window.toggleNaVisibility = function() {
+    state.showNaCriteria = !state.showNaCriteria;
+    if (state.activeDialogue && state.activeDialogue.evaluation) {
+        renderMonolithicCriteria(state.activeDialogue.evaluation.criteria_results);
+    }
+};
 
 function renderMonolithicCriteria(criteriaResults) {
     const container = document.getElementById('criteriaMonolithicContainer');
@@ -401,9 +485,20 @@ function renderMonolithicCriteria(criteriaResults) {
     }
 
     const rows = Object.values(criteriaResults).sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+    
+    // Count N/A items
+    const naCount = rows.filter(r => r.is_na || r.status === 'NA').length;
+    const naBtnText = document.getElementById('naToggleText');
+    if (naBtnText) {
+        naBtnText.innerText = state.showNaCriteria ? 'Скрыть N/A' : `Показать N/A (${naCount})`;
+    }
 
     container.innerHTML = rows.map(item => {
         const isNA = item.is_na || item.status === 'NA';
+        if (isNA && !state.showNaCriteria) {
+            return ''; // Hidden when collapsed
+        }
+
         const badgeKey = item.chess_badge;
         const iconInfo = (!isNA && badgeKey) ? getChessIconInfo(badgeKey) : null;
         const isViolation = (!isNA && (item.final_score === 0 || badgeKey === 'Blunder' || item.status === 'NO'));
@@ -412,45 +507,45 @@ function renderMonolithicCriteria(criteriaResults) {
         let chessBadgeHtml = '';
         if (isNA) {
             chessBadgeHtml = `
-                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-[var(--fb-border)] theme-surface-subtle text-[var(--fb-text-muted)] font-bold text-[10px]">
+                <div class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded border border-[var(--fb-border)] theme-surface-subtle text-[var(--fb-text-muted)] font-bold text-[9px]">
                     <span>N/A</span>
-                    <span class="font-normal text-[9px]">(не требуется)</span>
+                    <span class="font-normal text-[8px]">(не требуется)</span>
                 </div>
             `;
         } else if (iconInfo) {
             chessBadgeHtml = `
-                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${iconInfo.badgeClass} font-bold text-[11px]" title="${iconInfo.label}">
-                    <img src="/assets/rating icons/${iconInfo.file}" alt="${badgeKey}" class="chess-icon-sm">
+                <div class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded border ${iconInfo.badgeClass} font-bold text-[10px]" title="${iconInfo.label}">
+                    <img src="/assets/rating icons/${iconInfo.file}" alt="${badgeKey}" class="chess-icon-xs">
                     <span>${iconInfo.label}</span>
                 </div>
             `;
         } else {
-            chessBadgeHtml = `<span class="px-2 py-0.5 rounded-md theme-surface-subtle text-[var(--fb-text-secondary)] font-bold text-[10px]">${item.status}</span>`;
+            chessBadgeHtml = `<span class="px-1.5 py-0.2 rounded theme-surface-subtle text-[var(--fb-text-secondary)] font-bold text-[9px]">${item.status}</span>`;
         }
 
-        // Score display
+        // Clean Score Display without fractional clutter
         let scoreDisplay = '';
         if (isNA) {
             scoreDisplay = `
                 <div class="text-right">
-                    <span class="font-mono font-bold text-[var(--fb-text-muted)] text-xs">—</span>
-                    <div class="text-[10px] text-[var(--fb-text-muted)]">вес перераспределен</div>
+                    <span class="font-mono font-bold text-[var(--fb-text-muted)] text-[11px]">—</span>
+                    <div class="text-[9px] text-[var(--fb-text-muted)]">перераспределен</div>
                 </div>
             `;
         } else if (isViolation) {
             scoreDisplay = `
                 <div class="text-right">
-                    <span class="font-mono font-bold text-rose-500 text-xs">${item.final_score.toFixed(2)}</span>
-                    <span class="text-[var(--fb-text-muted)] font-mono text-[11px]">/ ${item.redistributed_weight.toFixed(2)} б</span>
-                    <div class="text-[10px] text-[var(--fb-text-muted)] font-mono">(баз. вес: ${item.base_weight})</div>
+                    <span class="font-mono font-bold text-rose-500 text-xs">${formatScore(item.final_score)}</span>
+                    <span class="text-[var(--fb-text-muted)] font-mono text-[10px]">/ ${formatScore(item.redistributed_weight)} б</span>
+                    <div class="text-[9px] text-[var(--fb-text-muted)] font-mono">вес: ${item.base_weight}</div>
                 </div>
             `;
         } else {
             scoreDisplay = `
                 <div class="text-right">
-                    <span class="font-mono font-bold text-[var(--fb-accent-green)] text-xs">${item.final_score.toFixed(2)}</span>
-                    <span class="text-[var(--fb-text-muted)] font-mono text-[11px]">/ ${item.redistributed_weight.toFixed(2)} б</span>
-                    <div class="text-[10px] text-[var(--fb-text-muted)] font-mono">(баз. вес: ${item.base_weight})</div>
+                    <span class="font-mono font-bold text-[var(--fb-accent-green)] text-xs">${formatScore(item.final_score)}</span>
+                    <span class="text-[var(--fb-text-muted)] font-mono text-[10px]">/ ${formatScore(item.redistributed_weight)} б</span>
+                    <div class="text-[9px] text-[var(--fb-text-muted)] font-mono">вес: ${item.base_weight}</div>
                 </div>
             `;
         }
@@ -459,8 +554,8 @@ function renderMonolithicCriteria(criteriaResults) {
             state.activeDialogue.appeals.some(a => a.criterion_id === item.criterion_id && a.status === 'pending');
 
         const disputeAction = isDisputed 
-            ? '<span class="text-[10px] text-amber-500 font-semibold flex items-center gap-1 shrink-0"><i class="fa-solid fa-clock"></i> В апелляции</span>'
-            : `<button onclick="window.openAppealModal('${item.criterion_id}')" class="px-2 py-1 text-[11px] text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] hover:bg-[var(--fb-surface-subtle)] rounded-lg border border-[var(--fb-border)] transition shrink-0">Оспорить</button>`;
+            ? '<span class="text-[9px] text-amber-500 font-semibold flex items-center gap-0.5 shrink-0"><i class="fa-solid fa-clock"></i> Оспаривается</span>'
+            : `<button onclick="window.openAppealModal('${item.criterion_id}')" class="px-1.5 py-0.5 text-[10px] text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] hover:bg-[var(--fb-surface-subtle)] rounded border border-[var(--fb-border)] transition shrink-0">Оспорить</button>`;
 
         // Integrated Quote block directly below the criterion (ONLY IF QUOTE EXISTS AND NOT EMPTY)
         let quoteHtml = '';
@@ -469,14 +564,14 @@ function renderMonolithicCriteria(criteriaResults) {
             const quoteClass = isViolation ? 'quote-box quote-box-violation' : 'quote-box';
             quoteHtml = `
                 <div onclick="window.jumpToQuote('${item.quote_timestamp || ''}', '${cleanQuoteForCall}')" 
-                    class="mt-2 p-2.5 rounded-lg cursor-pointer transition flex items-start gap-2.5 text-[11px] ${quoteClass}"
+                    class="mt-1.5 p-2 rounded-lg cursor-pointer transition flex items-start gap-2 text-[10px] ${quoteClass}"
                     title="Кликните для перехода к фразе в транскрипте">
-                    <i class="fa-solid fa-quote-left text-[var(--fb-accent-green)] mt-0.5 shrink-0 text-xs"></i>
+                    <i class="fa-solid fa-quote-left text-[var(--fb-accent-green)] mt-0.5 shrink-0 text-[10px]"></i>
                     <div class="min-w-0 flex-1">
-                        <span class="font-mono font-bold text-[var(--fb-accent-green)] mr-1.5">[${item.quote_timestamp || '—'}]</span>
-                        <span class="italic text-[var(--fb-text-primary)] font-medium">"${item.quote}"</span>
+                        <span class="font-mono font-bold text-[var(--fb-accent-green)] mr-1">[${item.quote_timestamp || '—'}]</span>
+                        <span class="italic text-[var(--fb-text-primary)]">"${item.quote}"</span>
                     </div>
-                    <span class="text-[10px] text-[var(--fb-accent-green)] font-semibold shrink-0 ml-2">Перейти ↵</span>
+                    <span class="text-[9px] text-[var(--fb-accent-green)] font-semibold shrink-0 ml-1">Перейти ↵</span>
                 </div>
             `;
         }
@@ -485,35 +580,37 @@ function renderMonolithicCriteria(criteriaResults) {
         const rowHighlight = isViolation ? 'border-l-[3px] border-l-rose-500 bg-rose-950/10' : '';
 
         return `
-            <div class="p-3.5 hover:bg-[var(--fb-surface-hover)] transition ${rowHighlight}">
+            <div class="p-2.5 hover:bg-[var(--fb-surface-hover)] transition ${rowHighlight}">
                 <!-- Top Row: Icon + Name + Score + Action -->
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                        <span class="font-mono font-bold text-[var(--fb-text-muted)] text-xs shrink-0">${item.code || ''}</span>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span class="font-mono font-bold text-[var(--fb-text-muted)] text-[11px] shrink-0">${item.code || ''}</span>
                         <div class="shrink-0">
                             ${chessBadgeHtml}
                         </div>
                         <div class="min-w-0">
-                            <span class="font-bold text-[var(--fb-text-primary)] text-xs">${item.name}</span>
-                            <span class="text-[10px] text-[var(--fb-text-muted)] uppercase tracking-tight ml-1.5">• ${item.section}</span>
+                            <span class="font-bold text-[var(--fb-text-primary)] text-[11px]">${item.name}</span>
+                            <span class="text-[9px] text-[var(--fb-text-muted)] uppercase tracking-tight ml-1">• ${item.section}</span>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3 shrink-0">
+                    <div class="flex items-center gap-2 shrink-0">
                         ${scoreDisplay}
                         ${disputeAction}
                     </div>
                 </div>
 
                 <!-- Bottom Block: Reasoning & Quote in-place -->
-                <div class="mt-2 pl-7">
-                    <div class="text-[11px] text-[var(--fb-text-secondary)] leading-relaxed font-normal">${item.reasoning || ''}</div>
+                <div class="mt-1 pl-5">
+                    <div class="text-[10px] text-[var(--fb-text-secondary)] leading-relaxed font-normal">${item.reasoning || ''}</div>
                     ${quoteHtml}
                 </div>
             </div>
         `;
     }).join('');
 }
+
+// ----------------- Column 2: Transcript Messages ----------------- //
 
 function renderTranscript() {
     const list = document.getElementById('transcriptMessagesList');
@@ -533,30 +630,30 @@ function renderTranscript() {
         let alignClass = '';
 
         if (isOperator) {
-            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-700/50">Оператор</span>';
+            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-700/50">Оператор</span>';
             bubbleClass = 'theme-surface border-l-3 border-l-[#00bc58] border-[var(--fb-border)]';
             alignClass = 'ml-6';
         } else if (isClient) {
-            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950/50 text-blue-300 border border-blue-700/50">Клиент</span>';
+            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-950/50 text-blue-300 border border-blue-700/50">Клиент</span>';
             bubbleClass = 'theme-surface-subtle border-l-3 border-l-blue-500 border-[var(--fb-border)]';
             alignClass = 'mr-6';
         } else if (isBot) {
-            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-950/50 text-purple-300 border border-purple-700/50">AI-Бот</span>';
+            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-purple-950/50 text-purple-300 border border-purple-700/50">AI-Бот</span>';
             bubbleClass = 'theme-surface border border-purple-500/40';
             alignClass = 'mx-4';
         } else {
-            roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-medium theme-surface-subtle text-[var(--fb-text-muted)]">Система</span>';
-            bubbleClass = 'theme-surface-subtle border border-[var(--fb-border-light)] text-[var(--fb-text-muted)] italic text-[11px]';
+            roleBadge = '<span class="px-1.5 py-0.2 rounded text-[9px] font-medium theme-surface-subtle text-[var(--fb-text-muted)]">Система</span>';
+            bubbleClass = 'theme-surface-subtle border border-[var(--fb-border-light)] text-[var(--fb-text-muted)] italic text-[10px]';
             alignClass = 'mx-6';
         }
 
         return `
             <div id="transcript-msg-${idx}" data-ts="${msg.timestamp}" data-text="${encodeURIComponent(msg.text)}" 
-                class="p-3 rounded-xl border transition shadow-2xs text-xs ${bubbleClass} ${alignClass}">
-                <div class="flex items-center justify-between mb-1.5">
-                    <div class="flex items-center gap-2">
+                class="p-2.5 rounded-xl border transition shadow-2xs text-xs ${bubbleClass} ${alignClass}">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-1.5">
                         ${roleBadge}
-                        <span class="font-mono text-[10px] text-[var(--fb-text-muted)]">${msg.timestamp}</span>
+                        <span class="font-mono text-[9px] text-[var(--fb-text-muted)]">${msg.timestamp}</span>
                     </div>
                 </div>
                 <div class="text-[var(--fb-text-primary)] leading-relaxed">
@@ -567,23 +664,82 @@ function renderTranscript() {
     }).join('');
 }
 
+// ----------------- Jump To Quote in Transcript ----------------- //
+
+window.jumpToQuote = function(timestamp, quoteText) {
+    const msgs = document.querySelectorAll('#transcriptMessagesList > div');
+    let target = null;
+
+    if (timestamp) {
+        for (let el of msgs) {
+            if (el.getAttribute('data-ts') === timestamp) {
+                target = el;
+                break;
+            }
+        }
+    }
+
+    if (!target && quoteText) {
+        const cleanQuote = quoteText.toLowerCase().replace(/['"«»]/g, '').trim();
+        for (let el of msgs) {
+            const txt = decodeURIComponent(el.getAttribute('data-text') || '').toLowerCase();
+            if (txt.includes(cleanQuote) || cleanQuote.includes(txt)) {
+                target = el;
+                break;
+            }
+        }
+    }
+
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-pulse');
+        setTimeout(() => {
+            target.classList.remove('highlight-pulse');
+        }, 2500);
+    }
+};
+
+// ----------------- Appeals Rendering & Drawer ----------------- //
+
+window.switchChecklistView = function(view) {
+    const appealsSec = document.getElementById('dialogueAppealsSection');
+    if (!appealsSec) return;
+
+    if (view === 'appeals') {
+        state.showAppealsTab = !state.showAppealsTab;
+        if (state.showAppealsTab) {
+            appealsSec.classList.remove('hidden');
+            appealsSec.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            appealsSec.classList.add('hidden');
+        }
+    }
+};
+
 function renderAppealsList() {
     const container = document.getElementById('dialogueAppealsList');
     const badge = document.getElementById('tabAppealsBadge');
+    const appealsSec = document.getElementById('dialogueAppealsSection');
     const dlg = state.activeDialogue;
     if (!dlg || !dlg.appeals || dlg.appeals.length === 0) {
-        container.innerHTML = `
-            <div class="p-6 text-center text-[var(--fb-text-muted)] text-xs">
-                <i class="fa-solid fa-scale-balanced text-xl text-[var(--fb-text-muted)] mb-1"></i>
-                <p>По данному диалогу апелляций пока нет.</p>
-            </div>
-        `;
-        badge.classList.add('hidden');
+        if (container) {
+            container.innerHTML = `
+                <div class="p-3 text-center text-[var(--fb-text-muted)] text-[10px]">
+                    <p>По данному диалогу апелляций пока нет.</p>
+                </div>
+            `;
+        }
+        if (badge) badge.classList.add('hidden');
         return;
     }
 
-    badge.innerText = dlg.appeals.length;
-    badge.classList.remove('hidden');
+    if (badge) {
+        badge.innerText = dlg.appeals.length;
+        badge.classList.remove('hidden');
+    }
+    if (appealsSec) {
+        appealsSec.classList.remove('hidden');
+    }
 
     container.innerHTML = dlg.appeals.map(a => {
         const isPending = a.status === 'pending';
@@ -591,34 +747,34 @@ function renderAppealsList() {
         
         let statusBadge = '';
         if (isPending) {
-            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/50 text-amber-300 border border-amber-600/50">На рассмотрении</span>';
+            statusBadge = '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-950/50 text-amber-300 border border-amber-600/50">На рассмотрении</span>';
         } else if (isApproved) {
-            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-600/50">Одобрено</span>';
+            statusBadge = '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-600/50">Одобрено</span>';
         } else {
-            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/50 text-rose-300 border border-rose-600/50">Отклонено</span>';
+            statusBadge = '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-950/50 text-rose-300 border border-rose-600/50">Отклонено</span>';
         }
 
         let resolutionBlock = '';
         if (!isPending) {
             resolutionBlock = `
-                <div class="mt-2 pt-2 border-t border-[var(--fb-border-light)] text-xs">
-                    <div class="font-semibold text-[var(--fb-text-primary)]">Решение супервизора:</div>
+                <div class="mt-1.5 pt-1.5 border-t border-[var(--fb-border-light)] text-[10px]">
+                    <div class="font-semibold text-[var(--fb-text-primary)]">Решение проверяющего:</div>
                     <div class="text-[var(--fb-text-secondary)] italic">"${a.supervisor_comment || 'Без комментария'}"</div>
-                    <div class="text-[11px] text-[var(--fb-text-muted)] mt-0.5">Итоговый балл: <strong>${a.resolved_score}</strong> (${a.resolved_at || ''})</div>
+                    <div class="text-[9px] text-[var(--fb-text-muted)] mt-0.5">Итог: <strong>${formatScore(a.resolved_score)}</strong> (${a.resolved_at || ''})</div>
                 </div>
             `;
         }
 
         return `
-            <div class="p-3 theme-surface-subtle rounded-xl border border-[var(--fb-border)] text-xs space-y-1.5">
+            <div class="p-2.5 theme-surface-subtle rounded-xl border border-[var(--fb-border)] text-xs space-y-1">
                 <div class="flex items-center justify-between">
-                    <span class="font-bold text-[var(--fb-text-primary)]">Критерий: ${a.criterion_id}</span>
+                    <span class="font-bold text-[var(--fb-text-primary)] text-[10px]">Критерий: ${a.criterion_id}</span>
                     ${statusBadge}
                 </div>
-                <div class="text-[var(--fb-text-secondary)]">
-                    Оценка AI: <strong>${a.original_score}</strong> → Запрос оператора: <strong class="text-amber-400">${a.proposed_score}</strong>
+                <div class="text-[10px] text-[var(--fb-text-secondary)]">
+                    Балл AI: <strong>${formatScore(a.original_score)}</strong> → Запрос: <strong class="text-amber-400">${formatScore(a.proposed_score)}</strong>
                 </div>
-                <div class="text-[var(--fb-text-primary)] italic theme-surface p-2.5 rounded-lg border border-[var(--fb-border-light)]">
+                <div class="text-[10px] text-[var(--fb-text-primary)] italic theme-surface p-2 rounded-lg border border-[var(--fb-border-light)]">
                     "${a.operator_comment}"
                 </div>
                 ${resolutionBlock}
@@ -627,59 +783,7 @@ function renderAppealsList() {
     }).join('');
 }
 
-// ----------------- Tab Navigation ----------------- //
-
-window.switchTab = function(tabName) {
-    state.activeTab = tabName;
-    ['score', 'transcript', 'appeals'].forEach(t => {
-        const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
-        const content = document.getElementById(`tabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
-        if (t === tabName) {
-            btn.className = 'px-3 py-1 font-semibold rounded-md bg-[var(--fb-surface)] text-[var(--fb-text-primary)] shadow-2xs transition';
-            content.classList.remove('hidden');
-        } else {
-            btn.className = 'px-3 py-1 font-medium rounded-md text-[var(--fb-text-secondary)] hover:text-[var(--fb-text-primary)] transition';
-            content.classList.add('hidden');
-        }
-    });
-};
-
-window.jumpToQuote = function(timestamp, quoteText) {
-    window.switchTab('transcript');
-
-    setTimeout(() => {
-        const msgs = document.querySelectorAll('#transcriptMessagesList > div');
-        let target = null;
-
-        if (timestamp) {
-            for (let el of msgs) {
-                if (el.getAttribute('data-ts') === timestamp) {
-                    target = el;
-                    break;
-                }
-            }
-        }
-
-        if (!target && quoteText) {
-            const cleanQuote = quoteText.toLowerCase().replace(/['"«»]/g, '').trim();
-            for (let el of msgs) {
-                const txt = decodeURIComponent(el.getAttribute('data-text') || '').toLowerCase();
-                if (txt.includes(cleanQuote) || cleanQuote.includes(txt)) {
-                    target = el;
-                    break;
-                }
-            }
-        }
-
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            target.classList.add('highlight-pulse');
-            setTimeout(() => {
-                target.classList.remove('highlight-pulse');
-            }, 2500);
-        }
-    }, 120);
-};
+// ----------------- Appeals Modal Logic ----------------- //
 
 window.openModal = function(id) {
     document.getElementById(id).classList.remove('hidden');
@@ -688,8 +792,6 @@ window.openModal = function(id) {
 window.closeModal = function(id) {
     document.getElementById(id).classList.add('hidden');
 };
-
-// ----------------- Appeals Logic ----------------- //
 
 window.openAppealModal = function(criterionId) {
     const dlg = state.activeDialogue;
@@ -782,7 +884,7 @@ async function openSupervisorModal() {
                 </div>
 
                 <div class="text-[11px] text-[var(--fb-text-secondary)]">
-                    Балл AI: <strong>${a.original_score}</strong> → Запрос оператора: <strong class="text-amber-400">${a.proposed_score}</strong>
+                    Балл AI: <strong>${formatScore(a.original_score)}</strong> → Запрос: <strong class="text-amber-400">${formatScore(a.proposed_score)}</strong>
                 </div>
 
                 <div class="italic text-[11px] theme-surface p-2 rounded-lg border border-[var(--fb-border-light)] text-[var(--fb-text-primary)]">
